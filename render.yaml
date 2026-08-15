@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: chongya-rongpiao
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    healthCheckPath: /api/state
+    envVars:
+      - key: PORT
+        value: "3000"
