@@ -1,0 +1,12 @@
+{
+  "name": "chongya-rongpiao-sync",
+  "version": "1.0.0",
+  "description": "冲呀蓉漂工作台云端同步后端（零依赖）",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
