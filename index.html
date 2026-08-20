@@ -1631,7 +1631,7 @@
     });
   }
 
-  var vRec=null,vStream=null,vRecStart=0,vTimer=null,vidCtx=null,vidToken=0;
+  var vRec=null,vStream=null,vRecStart=0,vTimer=null,vidCtx=null,vidToken=0,vSR=null,vSRFinal="";
   function pickVideoMime(){
     var cands=["video/webm;codecs=vp8,opus","video/webm;codecs=vp9,opus","video/webm","video/mp4"];
     for(var i=0;i<cands.length;i++){ try{ if(window.MediaRecorder&&MediaRecorder.isTypeSupported(cands[i])) return cands[i]; }catch(e){} }
@@ -1672,8 +1672,10 @@
         var id="v"+Date.now();
         var nm=(nameEl.value&&nameEl.value.trim())||(ctx.textId?(ctx.title+" 试讲"):("试讲"+(S.videos.length+1)));
         recordTimer(dur, "试讲："+(ctx.textId?ctx.title:"录制"), ctx.textId||null); // 录制时长计入总学习时长（video 时长不重复累加）
+        if(vSR){ try{ vSR.stop(); }catch(_){} vSR=null; }
+        var vTrans=(vSRFinal||"");
         vidPut(id,blob,function(){
-          S.videos.push({id:id,name:nm,textId:ctx.textId||null,createdAt:Date.now(),duration:dur});
+          S.videos.push({id:id,name:nm,textId:ctx.textId||null,createdAt:Date.now(),duration:dur,transcript:vTrans});
           save(); renderVideo(); renderCatalog(); renderHome();
         });
         if(sizeMB>200){ alert("这条视频约 "+sizeMB.toFixed(0)+"MB，已存本地 IndexedDB，建议点「下载」备份到手机。"); }
@@ -1682,6 +1684,21 @@
       vRecStart=Date.now();
       timerEl.textContent=fmtSec(0);
       vTimer=setInterval(function(){ timerEl.textContent=fmtSec((Date.now()-vRecStart)/1000); },500);
+      // 录像时同步启动语音转写（与结构化录音同机制；不支持则降级为手动输入）
+      vSRFinal=""; vSR=null;
+      var VSR=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(VSR){
+        try{
+          var vrecog=new VSR(); vrecog.lang="zh-CN"; vrecog.continuous=true; vrecog.interimResults=true;
+          vrecog.onresult=function(e){
+            var vinter="";
+            for(var vi=e.resultIndex;vi<e.results.length;vi++){ if(e.results[vi].isFinal)vSRFinal+=e.results[vi][0].transcript; else vinter+=e.results[vi][0].transcript; }
+          };
+          vrecog.onerror=function(e){};
+          vrecog.onend=function(){ if(vRec&&vRec.state==="recording"){ try{ vrecog.start(); }catch(_){} } };
+          vrecog.start(); vSR=vrecog;
+        }catch(e){ vSR=null; }
+      }
     }).catch(function(err){
       alert("无法访问摄像头："+err.message);
       ov.classList.remove("open");
@@ -1701,6 +1718,7 @@
           '<span class="vp-dur">'+fmtSec(v.duration)+'</span>'+
         '</div>'+
         '<input class="vid-name-input" value="'+esc(v.name)+'" onchange="window.RP.renameVid(\''+v.id+'\',this.value)" placeholder="视频命名">'+
+        '<textarea class="transcript" data-vtr="'+v.id+'" placeholder="录像时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveVidTranscript(\''+v.id+'\',this.value)">'+(v.transcript?esc(v.transcript):'')+'</textarea>'+
         '<button class="btn ghost" onclick="window.RP.vidDownload(\''+v.id+'\')">下载</button>'+
         '<button class="icon-btn del" title="删除" onclick="window.RP.delVid(\''+v.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>';
     });
@@ -1725,6 +1743,10 @@
   }
   function renameVid(id,name){
     var v=S.videos.find(function(x){return x.id===id;}); if(v){ v.name=name; save(); }
+  }
+  function saveVidTranscript(id,val){
+    var v=S.videos.find(function(x){return x.id===id;}); if(!v)return;
+    v.transcript=val; save();
   }
   // 共享视频播放器：单实例，避免多段视频同时解码导致音画不同步 / 同时播放
   var vpUrl=null;
@@ -2125,7 +2147,7 @@
     toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,
     transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
-    startVideoRec:startVideoRec,renameVid:renameVid,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
+    startVideoRec:startVideoRec,renameVid:renameVid,saveVidTranscript:saveVidTranscript,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
   };
 
   // 启动
