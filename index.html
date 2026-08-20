@@ -145,6 +145,12 @@
   .add-form{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;}
   .add-form select,.add-form input[type=text]{padding:9px 10px;border:1px solid var(--cy-mid);border-radius:10px;font-size:15px;color:var(--cy-text);}
   .add-form input[type=text]{flex:1;min-width:140px;}
+  /* 课文范围筛选 */
+  .scope-card{padding:10px 14px;}
+  .scope-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .scope-label{font-size:14px;font-weight:700;color:var(--cy-deep);}
+  .scope-bar select{padding:8px 10px;border:1px solid var(--cy-mid);border-radius:10px;font-size:14px;color:var(--cy-text);background:#fff;}
+  .scope-hint{font-size:13px;color:var(--cy-sub);}
   /* 随机抽题 */
   .draw-box{text-align:center;padding:30px 14px;}
   .draw-result{
@@ -464,6 +470,13 @@
             <input type="text" id="addTitle" placeholder="课文标题，如：观潮">
             <button class="btn primary" id="btnAddText">添加</button>
             <button class="btn ghost" id="btnResetTexts">恢复默认66篇</button>
+          </div>
+        </div>
+        <div class="card scope-card">
+          <div class="scope-bar">
+            <span class="scope-label">显示范围</span>
+            <select id="catScope"></select>
+            <span class="scope-hint" id="catScopeHint"></span>
           </div>
         </div>
         <div id="catalogList"></div>
@@ -1192,10 +1205,18 @@
     document.getElementById("newsList").innerHTML=html;
   }
 
+  var catScope="";
   // 课文目录
   function renderCatalog(){
     var sel=document.getElementById("addGrade");
     if(sel.options.length===0){ PREFIX_GRADES.forEach(function(g){var o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);}); }
+    var sc=document.getElementById("catScope");
+    if(sc.options.length===0){
+      var oa=document.createElement("option");oa.value="";oa.textContent="全部课文";sc.appendChild(oa);
+      PREFIX_GRADES.forEach(function(g){var o=document.createElement("option");o.value=g;o.textContent=g;sc.appendChild(o);});
+    }
+    sc.value=catScope;
+    sc.onchange=function(){ catScope=this.value; renderCatalog(); };
     var html="";
     // 记录用户已手动展开的年级，避免勾选/增删课文后整组被重新折叠
     var openGrades={};
@@ -1203,9 +1224,12 @@
     for(var hi=0;hi<heads.length;hi++){ if(heads[hi].classList.contains("open")) openGrades[heads[hi].getAttribute("data-g")]=true; }
     var extraGrades=[];
     S.texts.forEach(function(x){ if(PREFIX_GRADES.indexOf(x.grade)<0 && extraGrades.indexOf(x.grade)<0) extraGrades.push(x.grade); });
+    var shownCount=0;
     PREFIX_GRADES.concat(extraGrades).forEach(function(g){
+      if(catScope && g!==catScope) return;
       var items=S.texts.filter(function(x){return x.grade===g;});
-      var open = openGrades[g] ? "open" : "";
+      shownCount+=items.length;
+      var open = catScope ? "open" : (openGrades[g] ? "open" : "");
       var rows="";
       items.forEach(function(x){
         var vids=S.videos.filter(function(v){return v.textId===x.id;});
@@ -1247,6 +1271,7 @@
       });
       html+='<div class="grade-acc"><div class="grade-head '+open+'" data-g="'+esc(g)+'" onclick="this.classList.toggle(\'open\');var b=this.nextElementSibling;b.classList.toggle(\'open\');"><svg class="arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'+esc(g)+'<span class="cnt">'+items.length+'篇</span></div><div class="grade-body '+open+'">'+rows+'</div></div>';
     });
+    var hintEl=document.getElementById("catScopeHint"); if(hintEl) hintEl.textContent="共 "+shownCount+" 篇";
     document.getElementById("catalogList").innerHTML=html;
   }
 
