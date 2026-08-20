@@ -1210,11 +1210,18 @@
       items.forEach(function(x){
         var vids=S.videos.filter(function(v){return v.textId===x.id;});
         var vtag = vids.length ? ('<span class="tag" style="background:#e7f0ff;color:#2b6cb0;">视频 '+vids.length+'</span>') : '';
+        var tfam=x.fam||"低";
+        var famHtml='<span class="fam-ctrl"><span class="fam-label">熟悉度</span>'+
+          '<button class="fam-btn '+(tfam==="低"?"on low":"")+'" onclick="window.RP.setTextFam(\''+x.id+'\',\'低\')">低</button>'+
+          '<button class="fam-btn '+(tfam==="中"?"on mid":"")+'" onclick="window.RP.setTextFam(\''+x.id+'\',\'中\')">中</button>'+
+          '<button class="fam-btn '+(tfam==="高"?"on high":"")+'" onclick="window.RP.setTextFam(\''+x.id+'\',\'高\')">高</button>'+
+          '</span>';
         rows+='<div class="text-row '+(x.done?"done":"")+'">'+
           '<div class="tcheck" onclick="window.RP.toggleDone(\''+x.id+'\')">'+(x.done?'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>':'')+'</div>'+
           '<span class="tname">'+esc(x.title)+'</span>'+
           (x.tier?'<span class="tag" style="background:#fde3b8;color:#b5740a;">补</span>':'')+
           (x.excluded?'<span class="tag">已移出抽题池</span>':'')+
+          famHtml+
           vtag+
           '<button class="icon-btn" title="用计时器学这篇" onclick="window.RP.startTimerFor(\''+x.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg></button>'+
           '<button class="icon-btn" title="拍试讲视频" onclick="window.RP.startVideoRec(\''+x.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></button>'+
@@ -1334,6 +1341,10 @@
   function setFam(id,level){
     var s=S.struct.find(function(x){return x.id===id;}); if(!s)return;
     s.fam=level; save(); renderStruct();
+  }
+  function setTextFam(id,level){
+    var x=S.texts.find(function(t){return t.id===id;}); if(!x)return;
+    x.fam=level; save(); renderCatalog(); renderHome();
   }
   function toggleAns(id,btn){
     var st=document.querySelector('[data-struct="'+id+'"]');
@@ -1968,14 +1979,14 @@
     var g=document.getElementById("addGrade").value;
     var t=document.getElementById("addTitle").value.trim();
     if(!t){alert("请输入课文标题");return;}
-    S.texts.push({id:"t"+Date.now(),grade:g,title:t,done:false,excluded:false});
+    S.texts.push({id:"t"+Date.now(),grade:g,title:t,done:false,excluded:false,fam:"低"});
     document.getElementById("addTitle").value="";
     save();renderCatalog();renderHome();
   }
   function resetTexts(){
     if(!confirm("将恢复默认66篇并覆盖当前目录（已学状态会重置），确定？"))return;
     var idc=1;var texts=[];
-    DEFAULT_TEXTS.forEach(function(g){g[1].forEach(function(t){texts.push({id:"t"+(idc++),grade:g[0],title:t,done:false,excluded:false});});});
+    DEFAULT_TEXTS.forEach(function(g){g[1].forEach(function(t){texts.push({id:"t"+(idc++),grade:g[0],title:t,done:false,excluded:false,fam:"低"});});});
     S.texts=texts;save();renderCatalog();renderHome();
   }
   function addStruct(){
@@ -2109,7 +2120,7 @@
     toggleAns:toggleAns,delIntro:delIntro,renameIntro:renameIntro,delVid:delVid,vidDownload:vidDownload,
     delStruct:delStruct,addFromBank:addFromBank,randomBank:randomBank,openBank:openBank,closeBank:closeBank,
     toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,
-    transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,
+    transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
     startVideoRec:startVideoRec,renameVid:renameVid,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
   };
