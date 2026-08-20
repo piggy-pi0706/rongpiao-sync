@@ -1247,21 +1247,14 @@
         s.recs.forEach(function(rr){
           var audioTag='<audio controls'+(rr.audio?(' src="'+rr.audio+'"'):'')+' data-rec="'+rr.id+'"></audio>';
           var tr=rr.transcript||"";
-          var judgeHtml="";
-          if(rr.judge){
-            judgeHtml='<div class="judge-box"><b>AI 评判</b>　得分：<span class="judge-score">'+rr.judge.score+'</span>/100　结论：'+esc(rr.judge.verdict)+
-              (rr.judge.detail?('\n'+esc(rr.judge.detail)):'')+'</div>';
-          }
           recsHtml+='<div class="rec-item">'+
             '<div class="rec-top"><input class="rec-name-input" value="'+esc(rr.name)+'" onchange="window.RP.renameStructRec(\''+s.id+'\',\''+rr.id+'\',this.value)">'+ audioTag +
               '<span style="font-size:12px;color:var(--cy-sub);">'+fmtSec(rr.duration)+'</span>'+
-              '<button class="btn small" onclick="window.RP.transcribeRec(\''+s.id+'\',\''+rr.id+'\')">转文字</button>'+
-              '<button class="btn small primary" onclick="window.RP.judgeRec(\''+s.id+'\',\''+rr.id+'\')">AI 评判</button>'+
+              '<button class="btn small" onclick="window.RP.transcribeRec(\''+s.id+'\',\''+rr.id+'\')">文字稿</button>'+
               '<button class="icon-btn del" title="删除" onclick="window.RP.delStructRec(\''+s.id+'\',\''+rr.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>'+
             '</div>'+
-            '<textarea class="transcript" data-tr="'+rr.id+'" placeholder="语音转写文字会显示在这里，也可手动输入/修改（AI 评判以这里的文字为准）" onblur="window.RP.saveTranscript(\''+s.id+'\',\''+rr.id+'\',this.value)">'+(tr?esc(tr):'')+'</textarea>'+
+            '<textarea class="transcript" data-tr="'+rr.id+'" placeholder="录音时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveTranscript(\''+s.id+'\',\''+rr.id+'\',this.value)">'+(tr?esc(tr):'')+'</textarea>'+
             '<div class="tr-hint" id="trHint_'+rr.id+'"></div>'+
-            judgeHtml+
             '</div>';
         });
         recsHtml+='</div>';
@@ -1307,15 +1300,37 @@
     S.struct=S.struct.filter(function(s){return s.id!==id;});
     save();renderStruct();
   }
-  // 结构化题目录音作答（独立 recorder，避免与自我介绍录音冲突）
-  var sMediaRec=null,sMediaStream=null,sRecChunks=[],sRecStart=0,sRecTimer=null,sRecItem=null;
+  // 结构化题目录音作答（独立 recorder，避免与自我介绍录音冲突）；录音时同步自动转写
+  var sMediaRec=null,sMediaStream=null,sRecChunks=[],sRecStart=0,sRecTimer=null,sRecItem=null,sRecSR=null,sRecFinal="";
   function toggleStructRec(id,btn){
-    if(sMediaRec&&sMediaRec.state==="recording"){ sMediaRec.stop(); return; }
+    if(sMediaRec&&sMediaRec.state==="recording"){
+      sMediaRec.stop();
+      if(sRecSR){ try{ sRecSR.stop(); }catch(_){} }
+      return;
+    }
     if(mediaRec&&mediaRec.state==="recording"){ alert("请先停止「自我介绍」正在进行的录音。"); return; }
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert("当前环境不支持录音（需 https/localhost）。"); return; }
     var item=S.struct.find(function(x){return x.id===id;}); if(!item)return;
     navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
       sMediaStream=stream; sRecChunks=[]; sRecItem=item;
+      var rid="sr"+Date.now();
+      var name="作答"+((item.recs&&item.recs.length)||0);
+      // 录音时同步启动语音转写（Web Speech API；不支持则降级为手动输入）
+      var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+      sRecFinal=""; sRecSR=null;
+      if(SR){
+        try{
+          var recog=new SR(); recog.lang="zh-CN"; recog.continuous=true; recog.interimResults=true;
+          recog.onresult=function(e){
+            var inter="";
+            for(var i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal)sRecFinal+=e.results[i][0].transcript; else inter+=e.results[i][0].transcript; }
+            var ta=document.querySelector('textarea[data-tr="'+rid+'"]'); if(ta)ta.value=sRecFinal+(inter?(" "+inter):"");
+          };
+          recog.onerror=function(e){};
+          recog.onend=function(){ if(sMediaRec&&sMediaRec.state==="recording"){ try{ recog.start(); }catch(_){} } };
+          recog.start(); sRecSR=recog;
+        }catch(e){ sRecSR=null; }
+      }
       var mime="audio/webm";
       try{ sMediaRec=new MediaRecorder(stream); }catch(e){ sMediaRec=new MediaRecorder(stream,{mimeType:mime}); }
       sMediaRec.ondataavailable=function(e){ if(e.data.size>0)sRecChunks.push(e.data); };
@@ -1323,11 +1338,10 @@
         var blob=new Blob(sRecChunks,{type:mime});
         var sizeMB=blob.size/1048576;
         if(sizeMB>3.5){ alert("这条录音约 "+sizeMB.toFixed(1)+"MB，本地存储可能超限，建议缩短时长或导出备份后清理。"); }
-        var rid="sr"+Date.now();
-        var name="作答"+((item.recs&&item.recs.length)||0);
         structPut(rid,blob,function(ok){
           if(!item.recs)item.recs=[];
-          item.recs.push({id:rid,name:name,duration:Math.floor((Date.now()-sRecStart)/1000),createdAt:Date.now(),transcript:"",judge:null});
+          item.recs.push({id:rid,name:name,duration:Math.floor((Date.now()-sRecStart)/1000),createdAt:Date.now(),transcript:(sRecFinal||""),judge:null});
+          if(sRecSR){ try{ sRecSR.stop(); }catch(_){} sRecSR=null; }
           save();renderStruct();
           if(!ok)alert("录音已记录，但媒体库(IndexedDB)写入异常，建议尽快导出备份。");
         });
@@ -1352,61 +1366,25 @@
     var item=S.struct.find(function(x){return x.id===sid;}); if(!item||!item.recs)return;
     var rr=item.recs.find(function(r){return r.id===rid;}); if(rr){ rr.name=name; save(); }
   }
-  // 语音转文字（Web Speech API；不支持的浏览器降级为手动输入）
-  var srActive=null;
+  // 文字稿：录音时已同步自动转写；此处用于查看/聚焦编辑，旧录音可手动输入
   function transcribeRec(sid,rid){
     var item=S.struct.find(function(x){return x.id===sid;}); if(!item)return;
     var rr=item.recs.find(function(r){return r.id===rid;}); if(!rr)return;
-    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    var ta=document.querySelector('textarea[data-tr="'+rid+'"]');
     var hint=document.getElementById("trHint_"+rid);
-    if(srActive){ srActive.stop(); srActive=null; return; }
-    if(!SR){
-      if(hint)hint.textContent="当前浏览器不支持语音转写（iOS Safari 不支持）。请在下方文本框手动输入/粘贴你的作答文字，再点「AI 评判」。";
-      var ta0=document.querySelector('textarea[data-tr="'+rid+'"]'); if(ta0)ta0.focus();
-      return;
+    if(ta)ta.focus();
+    if(rr.transcript&&rr.transcript.trim()){
+      if(hint)hint.textContent="文字稿已自动生成（录音时同步转写），可直接在框内编辑。";
+    }else{
+      if(hint)hint.textContent="此录音未包含自动转写（可能是升级前录的旧录音）。可在下方文本框手动输入/粘贴作答；重新录音即可自动生成文字稿。";
     }
-    var recog=new SR(); recog.lang="zh-CN"; recog.continuous=true; recog.interimResults=true;
-    var finalText=rr.transcript||"";
-    recog.onresult=function(e){
-      var inter="";
-      for(var i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal)finalText+=e.results[i][0].transcript; else inter+=e.results[i][0].transcript; }
-      var ta=document.querySelector('textarea[data-tr="'+rid+'"]'); if(ta)ta.value=finalText+(inter?(" "+inter):"");
-    };
-    recog.onerror=function(e){ if(hint)hint.textContent="转写出错："+e.error+"，可手动输入文字。"; };
-    recog.onend=function(){ rr.transcript=finalText; save(); srActive=null; if(hint)hint.textContent="转写完成，可点「AI 评判」。"; };
-    srActive=recog;
-    try{ recog.start(); if(hint)hint.textContent="请开始作答…（再次点「转文字」停止）"; }
-    catch(e){ if(hint)hint.textContent="无法启动语音识别："+e.message; srActive=null; }
   }
   function saveTranscript(sid,rid,val){
     var item=S.struct.find(function(x){return x.id===sid;}); if(!item)return;
     var rr=item.recs.find(function(r){return r.id===rid;}); if(!rr)return;
     rr.transcript=val; save();
   }
-  // AI 语义评判（经同源 /api/llm 代理调用大模型）
-  function judgeRec(sid,rid){
-    var item=S.struct.find(function(x){return x.id===sid;}); if(!item)return;
-    var rr=item.recs.find(function(r){return r.id===rid;}); if(!rr)return;
-    var ta=document.querySelector('textarea[data-tr="'+rid+'"]');
-    if(ta)rr.transcript=ta.value;
-    if(!rr.transcript||!rr.transcript.trim()){ alert("请先点「转文字」转写，或手动在文本框输入作答内容，再让 AI 评判。"); return; }
-    var hint=document.getElementById("trHint_"+rid);
-    if(hint)hint.textContent="AI 评判中…（约几秒，需 Render 部署版并配置 LLM_API_KEY）";
-    var system="你是教师招聘结构化面试的资深评委。请根据题目的『答题结构要点』与『参考示例答案』，评判考生作答文字稿是否符合规范：是否覆盖关键要点、逻辑是否通顺、是否符合小学语文教师岗位语境。请用中文简洁回复。";
-    var user="【题目】"+item.q+"\n【答题结构要点】"+item.struct+"\n【参考示例答案】"+item.ans+"\n【考生作答文字稿】"+rr.transcript+
-      "\n\n请严格只返回如下 JSON（不要额外解释文字）：{\"score\":0到100的整数,\"verdict\":\"符合/基本符合/不符合\",\"covered\":[\"要点覆盖情况1\",\"要点覆盖情况2\"],\"suggestions\":[\"改进建议1\",\"改进建议2\",\"改进建议3\"]}";
-    fetch("/api/llm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({system:system,user:user})})
-      .then(function(r){ if(!r.ok)throw new Error("HTTP "+r.status); return r.json(); })
-      .then(function(d){
-        if(!d.ok){ if(hint)hint.textContent="AI 评判不可用："+(d.error||"后端未配置")+"。需在 Render 部署版并配置 LLM_API_KEY 后使用。"; return; }
-        var detail="";
-        if(d.covered&&d.covered.length)detail+="覆盖："+d.covered.join("； ")+"\n";
-        if(d.suggestions&&d.suggestions.length)detail+="建议："+d.suggestions.join("； ");
-        rr.judge={score:(typeof d.score==="number"?d.score:0),verdict:(d.verdict||""),detail:detail};
-        save();renderStruct();
-      })
-      .catch(function(e){ if(hint)hint.textContent="AI 评判请求失败："+e.message+"（需在 Render 部署版使用，且配置 LLM_API_KEY）。"; });
-  }
+  // （已移除 AI 评判：依赖 Render 部署 + LLM_API_KEY，当前纯静态托管不需要）
   // 错题本
   function toggleWrong(id){
     var item=S.struct.find(function(x){return x.id===id;}); if(!item)return;
@@ -2083,7 +2061,7 @@
     toggleAns:toggleAns,delIntro:delIntro,renameIntro:renameIntro,delVid:delVid,vidDownload:vidDownload,
     delStruct:delStruct,addFromBank:addFromBank,randomBank:randomBank,openBank:openBank,closeBank:closeBank,
     toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,
-    transcribeRec:transcribeRec,saveTranscript:saveTranscript,judgeRec:judgeRec,
+    transcribeRec:transcribeRec,saveTranscript:saveTranscript,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
     startVideoRec:startVideoRec,renameVid:renameVid,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
   };
