@@ -1399,9 +1399,12 @@
         if(sizeMB>3.5){ alert("这条录音约 "+sizeMB.toFixed(1)+"MB，本地存储可能超限，建议缩短时长或导出备份后清理。"); }
         structPut(rid,blob,function(ok){
           if(!item.recs)item.recs=[];
-          item.recs.push({id:rid,name:name,duration:Math.floor((Date.now()-sRecStart)/1000),createdAt:Date.now(),transcript:(sRecFinal||""),judge:null});
+          var recDur=Math.floor((Date.now()-sRecStart)/1000);
+          item.recs.push({id:rid,name:name,duration:recDur,createdAt:Date.now(),transcript:(sRecFinal||""),judge:null});
+          // 录音作答时长计入学习总时长
+          recordTimer(recDur, "结构化作答："+item.type, null);
           if(sRecSR){ try{ sRecSR.stop(); }catch(_){} sRecSR=null; }
-          save();renderStruct();
+          save();renderStruct();renderHome();
           if(!ok)alert("录音已记录，但媒体库(IndexedDB)写入异常，建议尽快导出备份。");
         });
         if(sMediaStream)sMediaStream.getTracks().forEach(function(t){t.stop();});
