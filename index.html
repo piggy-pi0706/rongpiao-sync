@@ -160,6 +160,10 @@
   .draw-result .grade-tag{font-size:13px;font-weight:600;color:var(--cy-sub);background:var(--cy-soft);padding:3px 10px;border-radius:20px;}
   .draw-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
   .pool-note{font-size:13px;color:var(--cy-sub);margin-top:10px;}
+  .draw-scope{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0 6px;flex-wrap:wrap;}
+  .draw-scope-label{font-size:14px;color:var(--cy-sub);}
+  .draw-scope select{padding:8px 10px;border:1px solid var(--cy-mid);border-radius:10px;font-size:14px;color:var(--cy-text);background:#fff;}
+  .draw-scope-hint{font-size:13px;color:var(--cy-sub);}
   /* 结构化 */
   .sp-card{border:1px solid var(--cy-soft);border-radius:14px;padding:14px 16px;margin-bottom:12px;}
   .sp-type{font-size:12px;font-weight:700;color:#fff;background:var(--cy-deep);padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:8px;}
@@ -176,13 +180,14 @@
   .head-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .tool-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px;}
   .sp-recs{margin-top:10px;border-top:1px dashed var(--cy-soft);padding-top:10px;}
-  .sp-recs .rec-item{border:1px solid var(--cy-soft);border-radius:12px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .sp-recs .rec-item .rec-name{flex:1;min-width:120px;font-weight:600;}
-  .sp-recs .rec-item audio{width:200px;max-width:50%;}
-  .sp-recs .rec-item{flex-direction:column;align-items:stretch;}
-  .sp-recs .rec-item .rec-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .sp-recs .rec-item .transcript{width:100%;margin-top:8px;border:1px solid var(--cy-soft);border-radius:10px;padding:8px 10px;font-size:14px;font-family:inherit;resize:vertical;min-height:54px;color:var(--cy-text);}
-  .sp-recs .rec-item .tr-hint{font-size:12px;color:var(--cy-sub);margin-top:4px;min-height:16px;}
+  .sp-recs .rec-item{border:1px solid var(--cy-soft);border-radius:12px;padding:12px;margin-bottom:10px;display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;background:#fff;}
+  .sp-recs .rec-item .rec-media{flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;justify-content:center;}
+  .sp-recs .rec-item .rec-media .rec-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .sp-recs .rec-item .rec-media audio{flex:1;min-width:180px;height:36px;}
+  .sp-recs .rec-item .rec-media .rec-dur{font-size:12px;color:var(--cy-sub);white-space:nowrap;}
+  .sp-recs .rec-item .rec-transcript{flex:1;min-width:240px;background:#fffaf0;border:1px solid #f4e4b5;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;}
+  .sp-recs .rec-item .rec-transcript .tr-hint{font-size:12px;color:var(--cy-sub);line-height:1.4;}
+  .sp-recs .rec-item .transcript{width:100%;flex:1;min-height:70px;border:1px solid var(--cy-mid);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;resize:vertical;background:#fff;color:var(--cy-text);}
   .sp-recs .rec-item .judge-box{margin-top:8px;background:var(--cy-soft);border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.6;color:var(--cy-text);white-space:pre-wrap;}
   .sp-recs .rec-item .judge-score{font-weight:800;color:var(--cy-deep);font-size:15px;}
   .rec-status{font-size:13px;color:var(--cy-deep);}
@@ -297,6 +302,13 @@
   .vid-tile .vp-dur{position:absolute;right:5px;bottom:5px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:1px 5px;border-radius:6px;font-variant-numeric:tabular-nums;}
   .vid-item{align-items:center;flex-wrap:wrap;gap:8px;}
   .vid-item .vid-name-input{flex:1;min-width:120px;}
+  /* 试讲录制页视频卡片：媒体与文字稿并列 */
+  #vidList .vid-item{align-items:stretch;flex-wrap:wrap;gap:12px;padding:12px;}
+  #vidList .vid-item .vid-media{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px;}
+  #vidList .vid-item .vid-media .vid-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;}
+  #vidList .vid-item .vid-transcript{flex:1;min-width:220px;background:#fffaf0;border:1px solid #f4e4b5;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;}
+  #vidList .vid-item .vid-transcript .tr-hint{font-size:12px;color:var(--cy-sub);line-height:1.4;}
+  #vidList .vid-item .vid-transcript .transcript{width:100%;flex:1;min-height:70px;border:1px solid var(--cy-mid);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;resize:vertical;background:#fff;color:var(--cy-text);}
   /* 模态 */
   .modal-bg{position:fixed;inset:0;background:rgba(120,40,70,.35);z-index:50;display:none;align-items:center;justify-content:center;padding:16px;}
   .modal-bg.show{display:flex;}
@@ -488,6 +500,11 @@
         <div class="card draw-box">
           <div style="font-size:14px;color:var(--cy-sub);">从你的课文库中随机抽取一篇来复习</div>
           <div class="draw-result" id="drawResult">点击下方按钮开始抽取</div>
+          <div class="draw-scope">
+            <span class="draw-scope-label">抽取范围</span>
+            <select id="drawScope"></select>
+            <span class="draw-scope-hint" id="drawScopeHint"></span>
+          </div>
           <div class="draw-actions">
             <button class="btn primary" id="btnDraw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a2 2 0 1 1-2.8 2.8"/><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>随机抽取</button>
             <button class="btn" id="btnPutBack" style="display:none;">放回重抽</button>
@@ -1277,14 +1294,23 @@
 
   // 随机抽题
   var lastDraw=null;
+  var drawScope="";
   function renderRandom(){
-    var pool=S.texts.filter(function(x){return !x.excluded;});
-    document.getElementById("poolNote").textContent="当前抽题池："+pool.length+" 篇（共 "+S.texts.length+" 篇）";
+    var pool=S.texts.filter(function(x){return !x.excluded && (!drawScope || x.grade===drawScope);});
+    var ds=document.getElementById("drawScope");
+    if(ds && ds.options.length===0){
+      var oa=document.createElement("option");oa.value="";oa.textContent="全部课文";ds.appendChild(oa);
+      PREFIX_GRADES.forEach(function(g){var o=document.createElement("option");o.value=g;o.textContent=g;ds.appendChild(o);});
+    }
+    if(ds){ ds.value=drawScope; ds.onchange=function(){ drawScope=this.value; lastDraw=null; renderRandom(); }; }
+    var scopeHint=document.getElementById("drawScopeHint");
+    if(scopeHint) scopeHint.textContent="共 "+pool.length+" 篇";
+    document.getElementById("poolNote").textContent="当前抽题池："+pool.length+" 篇（"+(drawScope||"全部课文")+"）";
     if(!lastDraw){ document.getElementById("drawResult").innerHTML="点击下方按钮开始抽取"; document.getElementById("btnPutBack").style.display="none"; document.getElementById("btnRemoveDraw").style.display="none"; }
   }
   function drawRandom(){
-    var pool=S.texts.filter(function(x){return !x.excluded;});
-    if(pool.length===0){ document.getElementById("drawResult").innerHTML="抽题池已空，去目录取消「移除」吧"; return; }
+    var pool=S.texts.filter(function(x){return !x.excluded && (!drawScope || x.grade===drawScope);});
+    if(pool.length===0){ document.getElementById("drawResult").innerHTML="当前范围「"+(drawScope||"全部课文")+"」抽题池已空"; return; }
     var pick=pool[Math.floor(Math.random()*pool.length)];
     lastDraw=pick;
     document.getElementById("drawResult").innerHTML='<span class="grade-tag">'+esc(pick.grade)+'</span>'+esc(pick.title);
@@ -1318,14 +1344,16 @@
         s.recs.forEach(function(rr){
           var audioTag='<audio controls'+(rr.audio?(' src="'+rr.audio+'"'):'')+' data-rec="'+rr.id+'"></audio>';
           var tr=rr.transcript||"";
+          var hasTr=tr&&tr.trim();
           recsHtml+='<div class="rec-item">'+
-            '<div class="rec-top"><input class="rec-name-input" value="'+esc(rr.name)+'" onchange="window.RP.renameStructRec(\''+s.id+'\',\''+rr.id+'\',this.value)">'+ audioTag +
-              '<span style="font-size:12px;color:var(--cy-sub);">'+fmtSec(rr.duration)+'</span>'+
-              '<button class="btn small" onclick="window.RP.transcribeRec(\''+s.id+'\',\''+rr.id+'\')">文字稿</button>'+
-              '<button class="icon-btn del" title="删除" onclick="window.RP.delStructRec(\''+s.id+'\',\''+rr.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>'+
+            '<div class="rec-media">'+
+              '<div class="rec-line"><input class="rec-name-input" value="'+esc(rr.name)+'" onchange="window.RP.renameStructRec(\''+s.id+'\',\''+rr.id+'\',this.value)">'+ audioTag +'</div>'+
+              '<div class="rec-line"><span class="rec-dur">时长 '+fmtSec(rr.duration)+'</span><button class="icon-btn del" title="删除" onclick="window.RP.delStructRec(\''+s.id+'\',\''+rr.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>'+
             '</div>'+
-            '<textarea class="transcript" data-tr="'+rr.id+'" placeholder="录音时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveTranscript(\''+s.id+'\',\''+rr.id+'\',this.value)">'+(tr?esc(tr):'')+'</textarea>'+
-            '<div class="tr-hint" id="trHint_'+rr.id+'"></div>'+
+            '<div class="rec-transcript">'+
+              '<div class="tr-hint">'+(hasTr?'文字稿已自动生成（录音时同步转写），可直接编辑。':'此录音未包含自动转写（可能是升级前录的旧录音）。可手动输入，或重新录音自动生成。')+'</div>'+
+              '<textarea class="transcript" data-tr="'+rr.id+'" placeholder="录音时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveTranscript(\''+s.id+'\',\''+rr.id+'\',this.value)">'+(tr?esc(tr):'')+'</textarea>'+
+            '</div>'+
             '</div>';
         });
         recsHtml+='</div>';
@@ -1737,15 +1765,24 @@
     var html="";
     if(S.videos.length===0){ html='<div style="color:var(--cy-sub);font-size:14px;">还没有试讲视频，点上方「开始录制」录一段吧（建议≤3分钟）。</div>'; }
     S.videos.forEach(function(v){
+      var vHasTr=v.transcript&&v.transcript.trim();
       html+='<div class="rec-item vid-item">'+
-        '<div class="vid-tile" onclick="window.RP.openVidPlayer(\''+v.id+'\')" title="点击播放">'+
-          '<svg class="vp-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'+
-          '<span class="vp-dur">'+fmtSec(v.duration)+'</span>'+
+        '<div class="vid-media">'+
+          '<div class="vid-tile" onclick="window.RP.openVidPlayer(\''+v.id+'\')" title="点击播放">'+
+            '<svg class="vp-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'+
+            '<span class="vp-dur">'+fmtSec(v.duration)+'</span>'+
+          '</div>'+
+          '<input class="vid-name-input" value="'+esc(v.name)+'" onchange="window.RP.renameVid(\''+v.id+'\',this.value)" placeholder="视频命名">'+
+          '<div class="vid-actions">'+
+            '<button class="btn ghost" onclick="window.RP.vidDownload(\''+v.id+'\')">下载</button>'+
+            '<button class="icon-btn del" title="删除" onclick="window.RP.delVid(\''+v.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>'+
+          '</div>'+
         '</div>'+
-        '<input class="vid-name-input" value="'+esc(v.name)+'" onchange="window.RP.renameVid(\''+v.id+'\',this.value)" placeholder="视频命名">'+
-        '<textarea class="transcript" data-vtr="'+v.id+'" placeholder="录像时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveVidTranscript(\''+v.id+'\',this.value)">'+(v.transcript?esc(v.transcript):'')+'</textarea>'+
-        '<button class="btn ghost" onclick="window.RP.vidDownload(\''+v.id+'\')">下载</button>'+
-        '<button class="icon-btn del" title="删除" onclick="window.RP.delVid(\''+v.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>';
+        '<div class="vid-transcript">'+
+          '<div class="tr-hint">'+(vHasTr?'文字稿已自动生成（录像时同步转写），可直接编辑。':'此视频未包含自动转写（可能是升级前录的旧视频）。可手动输入，或重新录像自动生成。')+'</div>'+
+          '<textarea class="transcript" data-vtr="'+v.id+'" placeholder="录像时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveVidTranscript(\''+v.id+'\',this.value)">'+(v.transcript?esc(v.transcript):'')+'</textarea>'+
+        '</div>'+
+        '</div>';
     });
     list.innerHTML=html;
   }
