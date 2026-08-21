@@ -590,6 +590,7 @@
         </div>
         <div class="card">
           <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>我的试讲</h3>
+          <input id="vidSearch" class="vid-search" placeholder="搜索视频名称或课文（如：祖父的园子 / 试讲）" oninput="window.RP.renderVideo()" style="width:100%;max-width:360px;padding:8px 12px;border:1px solid var(--cy-soft);border-radius:10px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
           <div class="rec-list" id="vidList"></div>
         </div>
       </div>
@@ -1334,7 +1335,7 @@
   function renderStruct(){
     var html="";
     if(S.struct.length===0){ html='<div style="color:var(--cy-sub);font-size:14px;">练习列表为空。点上方「从题库补充」或「添加我的结构化题」加入题目吧。</div>'; }
-    S.struct.forEach(function(s){
+    S.struct.slice().reverse().forEach(function(s){
       var fam=s.fam||"低";
       if(!s.recs)s.recs=[];
       if(!s.wrong)s.wrong=false;
@@ -1763,8 +1764,20 @@
     var list=document.getElementById("vidList");
     if(!list)return;
     var html="";
-    if(S.videos.length===0){ html='<div style="color:var(--cy-sub);font-size:14px;">还没有试讲视频，点上方「开始录制」录一段吧（建议≤3分钟）。</div>'; }
-    S.videos.forEach(function(v){
+    if(S.videos.length===0){ list.innerHTML='<div style="color:var(--cy-sub);font-size:14px;">还没有试讲视频，点上方「开始录制」录一段吧（建议≤3分钟）。</div>'; return; }
+    var kw=(document.getElementById("vidSearch")?document.getElementById("vidSearch").value:"").trim().toLowerCase();
+    var items=S.videos.slice().reverse();
+    if(kw){
+      items=items.filter(function(v){
+        var nm=(v.name||"").toLowerCase().indexOf(kw)>=0;
+        var tm=false;
+        if(v.textId){ var t=S.texts.find(function(x){return x.id===v.textId;}); if(t&&(t.title||"").toLowerCase().indexOf(kw)>=0)tm=true; }
+        return nm||tm;
+      });
+    }
+    html+='<div style="font-size:13px;color:var(--cy-sub);margin-bottom:8px;">共 '+items.length+' 条'+(kw?('（筛选：「'+kw+'」）'):'')+'</div>';
+    if(S.videos.length>0 && items.length===0){ html='<div style="color:var(--cy-sub);font-size:14px;">没有匹配「'+kw+'」的视频。</div>'; }
+    items.forEach(function(v){
       var vHasTr=v.transcript&&v.transcript.trim();
       html+='<div class="rec-item vid-item">'+
         '<div class="vid-media">'+
