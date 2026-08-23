@@ -590,7 +590,10 @@
         </div>
         <div class="card">
           <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>我的试讲</h3>
-          <input id="vidSearch" class="vid-search" placeholder="搜索视频名称或课文（如：祖父的园子 / 试讲）" oninput="window.RP.renderVideo()" style="width:100%;max-width:360px;padding:8px 12px;border:1px solid var(--cy-soft);border-radius:10px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+            <input id="vidSearch" class="vid-search" placeholder="搜索视频名称 / 课文 / 文字稿（支持模糊，如：祖父的园子 试讲）" oninput="window.RP.renderVideo()" style="flex:1;min-width:220px;max-width:360px;padding:8px 12px;border:1px solid var(--cy-soft);border-radius:10px;font-size:14px;box-sizing:border-box;">
+            <button class="btn ghost" onclick="window.RP.clearVidSearch()" style="padding:8px 14px;font-size:14px;white-space:nowrap;">清除</button>
+          </div>
           <div class="rec-list" id="vidList"></div>
         </div>
       </div>
@@ -1765,17 +1768,17 @@
     if(!list)return;
     var html="";
     if(S.videos.length===0){ list.innerHTML='<div style="color:var(--cy-sub);font-size:14px;">还没有试讲视频，点上方「开始录制」录一段吧（建议≤3分钟）。</div>'; return; }
-    var kw=(document.getElementById("vidSearch")?document.getElementById("vidSearch").value:"").trim().toLowerCase();
+    var kwRaw=(document.getElementById("vidSearch")?document.getElementById("vidSearch").value:"").trim().toLowerCase();
+    var kws=kwRaw?kwRaw.split(/\s+/).filter(Boolean):[];
     var items=S.videos.slice().reverse();
-    if(kw){
+    if(kws.length){
       items=items.filter(function(v){
-        var nm=(v.name||"").toLowerCase().indexOf(kw)>=0;
-        var tm=false;
-        if(v.textId){ var t=S.texts.find(function(x){return x.id===v.textId;}); if(t&&(t.title||"").toLowerCase().indexOf(kw)>=0)tm=true; }
-        return nm||tm;
+        var fields=[ (v.name||"").toLowerCase(), (v.transcript||"").toLowerCase() ];
+        if(v.textId){ var t=S.texts.find(function(x){return x.id===v.textId;}); if(t)fields.push((t.title||"").toLowerCase()); }
+        return kws.some(function(k){ return fields.some(function(f){ return f.indexOf(k)>=0; }); });
       });
     }
-    html+='<div style="font-size:13px;color:var(--cy-sub);margin-bottom:8px;">共 '+items.length+' 条'+(kw?('（筛选：「'+kw+'」）'):'')+'</div>';
+    html+='<div style="font-size:13px;color:var(--cy-sub);margin-bottom:8px;">共 '+items.length+' 条'+(kws.length?('（筛选：「'+kwRaw+'」）'):'')+'</div>';
     if(S.videos.length>0 && items.length===0){ html='<div style="color:var(--cy-sub);font-size:14px;">没有匹配「'+kw+'」的视频。</div>'; }
     items.forEach(function(v){
       var vHasTr=v.transcript&&v.transcript.trim();
@@ -1798,6 +1801,10 @@
         '</div>';
     });
     list.innerHTML=html;
+  }
+  function clearVidSearch(){
+    var el=document.getElementById("vidSearch"); if(el){ el.value=""; }
+    renderVideo();
   }
   function delVid(id){
     if(!confirm("确定删除这段试讲视频？"))return;
@@ -2222,7 +2229,7 @@
     toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,
     transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
-    startVideoRec:startVideoRec,renameVid:renameVid,saveVidTranscript:saveVidTranscript,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
+    startVideoRec:startVideoRec,renameVid:renameVid,saveVidTranscript:saveVidTranscript,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
   };
 
   // 启动
