@@ -591,7 +591,8 @@
         <div class="card">
           <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>我的试讲</h3>
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-            <input id="vidSearch" class="vid-search" placeholder="搜索视频名称 / 课文 / 文字稿（支持模糊，如：祖父的园子 试讲）" oninput="window.RP.renderVideo()" style="flex:1;min-width:220px;max-width:360px;padding:8px 12px;border:1px solid var(--cy-soft);border-radius:10px;font-size:14px;box-sizing:border-box;">
+            <input id="vidSearch" class="vid-search" placeholder="搜索视频名称 / 课文 / 文字稿（支持模糊，如：祖父的园子 试讲）" oninput="window.RP.renderVideo()" onchange="window.RP.renderVideo()" style="flex:1;min-width:220px;max-width:360px;padding:8px 12px;border:1px solid var(--cy-soft);border-radius:10px;font-size:14px;box-sizing:border-box;">
+            <button class="btn ghost" onclick="window.RP.renderVideo()" style="padding:8px 14px;font-size:14px;white-space:nowrap;">搜索</button>
             <button class="btn ghost" onclick="window.RP.clearVidSearch()" style="padding:8px 14px;font-size:14px;white-space:nowrap;">清除</button>
           </div>
           <div class="rec-list" id="vidList"></div>
@@ -1779,7 +1780,7 @@
       });
     }
     html+='<div style="font-size:13px;color:var(--cy-sub);margin-bottom:8px;">共 '+items.length+' 条'+(kws.length?('（筛选：「'+kwRaw+'」）'):'')+'</div>';
-    if(S.videos.length>0 && items.length===0){ html='<div style="color:var(--cy-sub);font-size:14px;">没有匹配「'+kw+'」的视频。</div>'; }
+    if(S.videos.length>0 && items.length===0){ html='<div style="color:var(--cy-sub);font-size:14px;">没有匹配「'+kwRaw+'」的视频。可尝试搜索视频命名、关联课文或文字稿里的关键词。</div>'; }
     items.forEach(function(v){
       var vHasTr=v.transcript&&v.transcript.trim();
       html+='<div class="rec-item vid-item">'+
