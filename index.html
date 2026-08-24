@@ -1738,7 +1738,7 @@
       ov.classList.add("open");
       var mime=pickVideoMime();
       try{ vRec=new MediaRecorder(stream,{mimeType:mime}); }catch(e){ vRec=new MediaRecorder(stream); }
-      var ctx={textId:textId,start:Date.now(),cancelled:false,title:tTitle};
+      var ctx={textId:textId,start:Date.now(),cancelled:false,title:tTitle,overlap:false};
       vidCtx=ctx;
       vRec.ondataavailable=function(e){ if(e.data&&e.data.size>0)chunks.push(e.data); };
       vRec.onstop=function(){
@@ -1751,7 +1751,12 @@
         var sizeMB=blob.size/1048576;
         var id="v"+Date.now();
         var nm=(nameEl.value&&nameEl.value.trim())||(ctx.textId?(ctx.title+" 试讲"):("试讲"+(S.videos.length+1)));
-        recordTimer(dur, "试讲："+(ctx.textId?ctx.title:"录制"), ctx.textId||null); // 录制时长计入总学习时长（video 时长不重复累加）
+        if(ctx.overlap||timer.running){
+          // 录制时段与主计时重叠，该时段已被计时覆盖，避免重复计入总学习时长
+          if(dur>0)alert("本次录制与主计时时段重叠，时长已计入主计时，未重复加入总时长。");
+        }else{
+          recordTimer(dur, "试讲："+(ctx.textId?ctx.title:"录制"), ctx.textId||null); // 录制时长计入总学习时长（不与主计时重叠时）
+        }
         if(vSR){ try{ vSR.stop(); }catch(_){} vSR=null; }
         var vTrans=(vSRFinal||"");
         vidPut(id,blob,function(){
@@ -1763,7 +1768,7 @@
       vRec.start(5000); // 每 5 秒落一次数据块，稳定支持十几分钟长录制
       vRecStart=Date.now();
       timerEl.textContent=fmtSec(0);
-      vTimer=setInterval(function(){ timerEl.textContent=fmtSec((Date.now()-vRecStart)/1000); },500);
+      vTimer=setInterval(function(){ timerEl.textContent=fmtSec((Date.now()-vRecStart)/1000); if(timer.running)ctx.overlap=true; },500);
       // 录像时同步启动语音转写（与结构化录音同机制；不支持则降级为手动输入）
       vSRFinal=""; vSR=null;
       var VSR=window.SpeechRecognition||window.webkitSpeechRecognition;
