@@ -309,6 +309,21 @@
   #vidList .vid-item .vid-transcript{flex:1;min-width:220px;background:#fffaf0;border:1px solid #f4e4b5;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;}
   #vidList .vid-item .vid-transcript .tr-hint{font-size:12px;color:var(--cy-sub);line-height:1.4;}
   #vidList .vid-item .vid-transcript .transcript{width:100%;flex:1;min-height:70px;border:1px solid var(--cy-mid);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;resize:vertical;background:#fff;color:var(--cy-text);}
+  /* 试讲评价 */
+  #vidList .vid-item .vid-review{flex:1 1 100%;background:#fffaf0;border:1px solid #f4e4b5;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;margin-top:2px;}
+  #vidList .vid-item .vid-review .vr-hint{font-size:12px;color:var(--cy-sub);line-height:1.4;}
+  #vidList .vid-item .vid-review .vreview{width:100%;min-height:54px;border:1px solid var(--cy-mid);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;resize:vertical;background:#fff;color:var(--cy-text);}
+  .rev-summary{background:#fffdf6;border:1px solid var(--cy-soft);border-radius:12px;padding:12px 14px;margin-bottom:12px;}
+  .rev-summary .rs-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .rev-summary .rs-title{font-size:14px;font-weight:600;color:var(--cy-deep);}
+  .rev-summary .rs-sub{font-size:12px;color:var(--cy-sub);}
+  .rev-tags{display:flex;flex-wrap:wrap;gap:8px;}
+  .rev-tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 12px;font-size:13px;line-height:1.2;background:var(--cy-soft);color:var(--cy-deep);border:1px solid #ecdfb0;}
+  .rev-tag b{font-size:12px;opacity:.7;font-weight:600;}
+  .rev-tag.hot{background:#f3d56a;color:#5b4612;border-color:#e0b94e;font-size:14px;font-weight:600;}
+  .rev-empty{font-size:13px;color:var(--cy-sub);}
+  .rev-other{margin-top:8px;font-size:12px;color:var(--cy-sub);}
+  .rev-other b{color:var(--cy-deep);font-weight:600;}
   /* 模态 */
   .modal-bg{position:fixed;inset:0;background:rgba(120,40,70,.35);z-index:50;display:none;align-items:center;justify-content:center;padding:16px;}
   .modal-bg.show{display:flex;}
@@ -601,6 +616,7 @@
             <button class="btn ghost" onclick="window.RP.renderVideo()" style="padding:8px 14px;font-size:14px;white-space:nowrap;">搜索</button>
             <button class="btn ghost" onclick="window.RP.clearVidSearch()" style="padding:8px 14px;font-size:14px;white-space:nowrap;">清除</button>
           </div>
+          <div class="rev-summary" id="vidReviewSummary"></div>
           <div class="rec-list" id="vidList"></div>
         </div>
       </div>
@@ -1773,6 +1789,7 @@
   function renderVideo(){
     var list=document.getElementById("vidList");
     if(!list)return;
+    renderVidReviewSummary();
     var html="";
     if(S.videos.length===0){ list.innerHTML='<div style="color:var(--cy-sub);font-size:14px;">还没有试讲视频，点上方「开始录制」录一段吧（建议≤3分钟）。</div>'; return; }
     var kwRaw=(document.getElementById("vidSearch")?document.getElementById("vidSearch").value:"").trim().toLowerCase();
@@ -1805,6 +1822,10 @@
           '<div class="tr-hint">'+(vHasTr?'文字稿已自动生成（录像时同步转写），可直接编辑。':'此视频未包含自动转写（可能是升级前录的旧视频）。可手动输入，或重新录像自动生成。')+'</div>'+
           '<textarea class="transcript" data-vtr="'+v.id+'" placeholder="录像时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveVidTranscript(\''+v.id+'\',this.value)">'+(v.transcript?esc(v.transcript):'')+'</textarea>'+
         '</div>'+
+        '<div class="vid-review">'+
+          '<div class="vr-hint">我的评价（可记录亮点与待改进，系统会自动汇总高频评价维度）：</div>'+
+          '<textarea class="vreview" data-vrev="'+v.id+'" placeholder="例如：板书工整、语速适中，导入可以更自然" onblur="window.RP.saveVidReview(\''+v.id+'\',this.value)">'+(v.review?esc(v.review):'')+'</textarea>'+
+        '</div>'+
         '</div>';
     });
     list.innerHTML=html;
@@ -1836,6 +1857,55 @@
   function saveVidTranscript(id,val){
     var v=S.videos.find(function(x){return x.id===id;}); if(!v)return;
     v.transcript=val; save();
+  }
+  // 保存单篇试讲评价
+  function saveVidReview(id,val){
+    var v=S.videos.find(function(x){return x.id===id;}); if(!v)return;
+    v.review=(val||"").trim(); save(); renderVidReviewSummary();
+  }
+  // 高频评价汇总：基于全部试讲评价的常提维度自动统计
+  function renderVidReviewSummary(){
+    var box=document.getElementById("vidReviewSummary");
+    if(!box)return;
+    var vs=S.videos||[];
+    var reviews=vs.map(function(v){return v.review||"";}).filter(function(t){return t.trim();});
+    if(vs.length===0){
+      box.innerHTML='<div class="rev-empty">还没有试讲视频，录一段并写下评价后，这里会自动汇总高频评价维度。</div>';
+      return;
+    }
+    // 预设试讲评价维度（命中即计数，每篇最多计一次）
+    var TAGS=["教态","板书","导入","情境","互动","朗读","字词","提问","过渡","评价语","时间","节奏","重难点","情感","普通话","语言","环节","声音","目标","语速","拓展","自然","亲切","清晰","流畅"];
+    var cnt={}; TAGS.forEach(function(t){cnt[t]=0;});
+    reviews.forEach(function(txt){
+      txt=(txt||"").toLowerCase();
+      TAGS.forEach(function(t){ if(txt.indexOf(t.toLowerCase())>=0) cnt[t]++; });
+    });
+    var ranked=TAGS.map(function(t){return {t:t,n:cnt[t]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+    // 其他高频词（bigram 兜底，去停用字，出现≥2次）
+    var stop="的了是我你他她们和在与对把被着过也都就还很太更这那哪吗呢啊吧不没有个可以应该需要比较老师学生地得又再才让给向从到之其等及或并若如为于以而则且但虽因果所每各该当将已说好".split("");
+    var all=reviews.join("").replace(/[^\u4e00-\u9fa5]/g,"");
+    var bg={};
+    for(var i=0;i+1<all.length;i++){
+      var w=all.substr(i,2);
+      if(stop.indexOf(w[0])>=0||stop.indexOf(w[1])>=0) continue;
+      bg[w]=(bg[w]||0)+1;
+    }
+    var bgTop=Object.keys(bg).filter(function(k){return bg[k]>=2 && TAGS.indexOf(k)<0;}).map(function(k){return {t:k,n:bg[k]};}).sort(function(a,b){return b.n-a.n;}).slice(0,8);
+    var html='<div class="rs-head"><span class="rs-title">📊 高频评价汇总</span><span class="rs-sub">共 '+vs.length+' 篇试讲，'+reviews.length+' 篇已写评价 · 自动提取你最常关注的评价维度</span></div>';
+    if(ranked.length){
+      var hot=Math.max(2,Math.ceil(vs.length/2)); // 出现过半则标为高频
+      html+='<div class="rev-tags">';
+      ranked.forEach(function(x){
+        html+='<span class="rev-tag'+(x.n>=hot?' hot':'')+'">'+esc(x.t)+' <b>×'+x.n+'</b></span>';
+      });
+      html+='</div>';
+    }else{
+      html+='<div class="rev-empty">暂未识别到常见评价维度，可在各视频下写下评价（如：板书工整、导入自然、语速适中）。</div>';
+    }
+    if(bgTop.length){
+      html+='<div class="rev-other">其他高频词：'+bgTop.map(function(x){return esc(x.t)+'（×'+x.n+'）';}).join('、')+'</div>';
+    }
+    box.innerHTML=html;
   }
   // 共享视频播放器：单实例，避免多段视频同时解码导致音画不同步 / 同时播放
   var vpUrl=null;
@@ -2236,7 +2306,7 @@
     toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,
     transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
-    startVideoRec:startVideoRec,renameVid:renameVid,saveVidTranscript:saveVidTranscript,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
+    startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
   };
 
   // 启动
