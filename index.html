@@ -287,7 +287,13 @@
   #vidPlayer .vp-buf{position:absolute;left:0;top:0;height:100%;border-radius:4px;background:rgba(255,255,255,.22);width:0;}
   #vidPlayer .vp-fill{position:absolute;left:0;top:0;height:100%;border-radius:4px;background:#f0a93a;width:0;transition:width .08s linear;}
   #vidPlayer .vp-knob{position:absolute;top:50%;left:0;width:14px;height:14px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 1px 3px rgba(0,0,0,.4);}
-  #vidPlayer .vp-time{color:#fff;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  #vidPlayer .vp-time{color:#fff;  font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  #vidPlayer .vp-review{background:#241a0c;padding:10px   12px;border-top:1px solid rgba(255,255,255,.12);}
+  #vidPlayer .vp-review .vr-tag{color:#f0c674;font-size:12px;margin-bottom:6px;}
+  #vidPlayer .vp-review textarea{width:100%;min-height:64px;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;resize:vertical;background:#fff;color:#222;box-sizing:border-box;}
+  .rev-tag{cursor:pointer;user-select:none;transition:transform .1s;}
+  .rev-tag:hover{transform:translateY(-1px);}
+  .rev-clear{cursor:pointer;color:#c98a00;font-size:12px;text-decoration:underline;margin-left:8px;}
   /* 简案图片查看器 */
   #jiananModal{position:fixed;inset:0;background:rgba(20,15,5,.86);z-index:520;display:none;align-items:center;justify-content:center;padding:16px;}
   #jiananModal.open{display:flex;}
@@ -648,6 +654,10 @@
         </button>
         <div class="vp-bar" id="vpBar"><div class="vp-buf" id="vpBuf"></div><div class="vp-fill" id="vpFill"></div><div class="vp-knob" id="vpKnob"></div></div>
         <span class="vp-time" id="vpTime">0:00 / 0:00</span>
+      </div>
+      <div class="vp-review">
+        <div class="vr-tag">边看边评（自动保存）：</div>
+        <textarea id="vpReview" placeholder="边看边写你的评价，松手即自动保存；支持「不够流畅」这类否定评价会被自动汇总" oninput="window.RP.saveVidReviewFromPlayer(this.value)"></textarea>
       </div>
     </div>
   </div>
@@ -1807,7 +1817,13 @@
         return kws.some(function(k){ return fields.some(function(f){ return f.indexOf(k)>=0; }); });
       });
     }
-    html+='<div style="font-size:13px;color:var(--cy-sub);margin-bottom:8px;">共 '+items.length+' 条'+(kws.length?('（筛选：「'+kwRaw+'」）'):'')+'</div>';
+    if(vidReviewFilter){
+      items=items.filter(function(v){ return (v.review||"").indexOf(vidReviewFilter)>=0; });
+    }
+    var note="";
+    if(kws.length){ note+="（搜索：「"+kwRaw+"」）"; }
+    if(vidReviewFilter){ note+="（评价筛选：「"+vidReviewFilter+"」）"; }
+    html+='<div style="font-size:13px;color:var(--cy-sub);margin-bottom:8px;">共 '+items.length+' 条'+note+'</div>';
     if(S.videos.length>0 && items.length===0){ html='<div style="color:var(--cy-sub);font-size:14px;">没有匹配「'+kwRaw+'」的视频。可尝试搜索视频命名、关联课文或文字稿里的关键词。</div>'; }
     items.forEach(function(v){
       var vHasTr=v.transcript&&v.transcript.trim();
@@ -1868,6 +1884,19 @@
     var v=S.videos.find(function(x){return x.id===id;}); if(!v)return;
     v.review=(val||"").trim(); save(); renderVidReviewSummary();
   }
+  // 播放器内边看边评：保存当前视频评价并刷新汇总
+  function saveVidReviewFromPlayer(val){
+    if(!vpCurId)return;
+    var v=S.videos.find(function(x){return x.id===vpCurId;}); if(!v)return;
+    v.review=(val||"").trim(); save(); renderVidReviewSummary();
+  }
+  // 点击汇总标签：按评价内容筛选试讲列表（同时高亮）
+  function filterVideosByReview(lbl){
+    vidReviewFilter=lbl; renderVideo();
+  }
+  function clearVidReviewFilter(){
+    vidReviewFilter=null; renderVideo();
+  }
   // 高频评价汇总：基于全部试讲评价的常提维度自动统计
   function renderVidReviewSummary(){
     var box=document.getElementById("vidReviewSummary");
@@ -1879,13 +1908,29 @@
       return;
     }
     // 预设试讲评价维度（命中即计数，每篇最多计一次）
-    var TAGS=["教态","板书","导入","情境","互动","朗读","字词","提问","过渡","评价语","时间","节奏","重难点","情感","普通话","语言","环节","声音","目标","语速","拓展","自然","亲切","清晰","流畅"];
-    var cnt={}; TAGS.forEach(function(t){cnt[t]=0;});
-    reviews.forEach(function(txt){
-      txt=(txt||"").toLowerCase();
-      TAGS.forEach(function(t){ if(txt.indexOf(t.toLowerCase())>=0) cnt[t]++; });
+    var DIM=["教态","板书","导入","情境","互动","朗读","字词","提问","过渡","评价语","时间","节奏","重难点","情感","普通话","语言","环节","声音","目标","语速","拓展","自然","亲切","清晰","流畅","完整","充分","生动","重点"];
+    var PRE_NEG=["不够","缺乏","缺少","不足","欠缺","有待","不太","没有","未"];
+    var SUF_NEG=["弱","乱","慢","快","生硬","平淡","模糊","单调","拖沓","卡顿","过多","过少","偏快","偏慢","过快","过慢","不标准","不突出","不明显","不工整","不生动"];
+    var cnt={};
+    vs.forEach(function(v){
+      var low=(v.review||"").toLowerCase();
+      DIM.forEach(function(d){
+        var dl=d.toLowerCase();
+        var idx=0;
+        while((idx=low.indexOf(dl,idx))>=0){
+          var pre=low.substring(Math.max(0,idx-3),idx);
+          var post=low.substring(idx+dl.length,idx+dl.length+3);
+          var lbl=null;
+          if(idx>0){ var c1=low.charAt(idx-1); if(c1==="不"||c1==="没") lbl=(c1==="不"?"不":"没")+d; }
+          if(!lbl){ for(var p=0;p<PRE_NEG.length;p++){ if(pre.indexOf(PRE_NEG[p])>=0||post.indexOf(PRE_NEG[p])>=0){ lbl=PRE_NEG[p]+d; break; } } }
+          if(!lbl){ for(var s=0;s<SUF_NEG.length;s++){ if(pre.indexOf(SUF_NEG[s])>=0||post.indexOf(SUF_NEG[s])>=0){ lbl=d+SUF_NEG[s]; break; } } }
+          if(!lbl) lbl=d;
+          cnt[lbl]=(cnt[lbl]||0)+1;
+          idx+=dl.length;
+        }
+      });
     });
-    var ranked=TAGS.map(function(t){return {t:t,n:cnt[t]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+    var ranked=Object.keys(cnt).map(function(k){return {t:k,n:cnt[k]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
     // 其他高频词（bigram 兜底，去停用字，出现≥2次）
     var stop="的了是我你他她们和在与对把被着过也都就还很太更这那哪吗呢啊吧不没有个可以应该需要比较老师学生地得又再才让给向从到之其等及或并若如为于以而则且但虽因果所每各该当将已说好".split("");
     var all=reviews.join("").replace(/[^\u4e00-\u9fa5]/g,"");
@@ -1896,30 +1941,45 @@
       bg[w]=(bg[w]||0)+1;
     }
     var bgTop=Object.keys(bg).filter(function(k){return bg[k]>=2 && TAGS.indexOf(k)<0;}).map(function(k){return {t:k,n:bg[k]};}).sort(function(a,b){return b.n-a.n;}).slice(0,8);
-    var html='<div class="rs-head"><span class="rs-title">📊 高频评价汇总</span><span class="rs-sub">共 '+vs.length+' 篇试讲，'+reviews.length+' 篇已写评价 · 自动提取你最常关注的评价维度</span></div>';
+    var html='<div class="rs-head"><span class="rs-title">📊 高频评价汇总</span><span class="rs-sub">共 '+vs.length+' 篇试讲，'+reviews.length+' 篇已写评价 · 自动提取你最常关注的维度（含负面评价）</span></div>';
+    if(vidReviewFilter){
+      html+='<div class="rev-filter" style="margin:6px 0;font-size:13px;">当前筛选：<b style="color:#c98a00;">「'+esc(vidReviewFilter)+'」</b> <span class="rev-clear" onclick="window.RP.clearVidReviewFilter()">✕ 清除筛选</span></div>';
+    }
     if(ranked.length){
-      var hot=Math.max(2,Math.ceil(vs.length/2)); // 出现过半则标为高频
+      var hot=Math.max(2,Math.ceil(vs.length/2)); // 出现超过半数篇数则标为高频
       html+='<div class="rev-tags">';
       ranked.forEach(function(x){
-        html+='<span class="rev-tag'+(x.n>=hot?' hot':'')+'">'+esc(x.t)+' <b>×'+x.n+'</b></span>';
+        var act=(vidReviewFilter===x.t)?' style="outline:2px solid #c98a00;"':'';
+        html+='<span class="rev-tag'+(x.n>=hot?' hot':'')+'" data-lbl="'+esc(x.t)+'"'+act+'>'+esc(x.t)+' <b>×'+x.n+'</b></span>';
       });
       html+='</div>';
     }else{
-      html+='<div class="rev-empty">暂未识别到常见评价维度，可在各视频下写下评价（如：板书工整、导入自然、语速适中）。</div>';
+      html+='<div class="rev-empty">暂未识别到常见评价维度，可在各视频下写下评价（如：板书工整、导入自然、语速适中；负面如：不够流畅、板书弱）。</div>';
     }
     if(bgTop.length){
       html+='<div class="rev-other">其他高频词：'+bgTop.map(function(x){return esc(x.t)+'（×'+x.n+'）';}).join('、')+'</div>';
     }
     box.innerHTML=html;
+    // 点击标签筛选对应评价（事件委托，避免内层引号冲突）
+    box.onclick=function(e){
+      var s=e.target.closest && e.target.closest("[data-lbl]");
+      if(s){ var lbl=s.getAttribute("data-lbl"); if(lbl) window.RP.filterVideosByReview(lbl); }
+    };
   }
   // 共享视频播放器：单实例，避免多段视频同时解码导致音画不同步 / 同时播放
   var vpUrl=null;
+  var vpCurId=null;
+  var vidReviewFilter=null; // 评价汇总标签筛选
   function openVidPlayer(id){
     var v=S.videos.find(function(x){return x.id===id;}); if(!v)return;
     var ov=document.getElementById("vidPlayer");
     var el=document.getElementById("vidPlayerEl");
     var title=document.getElementById("vpTitle");
     if(!ov||!el)return;
+    vpCurId=id;
+    // 同步载入该视频已有评价，方便边看边评
+    var revEl=document.getElementById("vpReview");
+    if(revEl)revEl.value=(v.review||"");
     // 先彻底重置上一段（防止残留解码上下文造成卡顿）
     try{ el.pause(); }catch(e){}
     if(vpUrl){ try{URL.revokeObjectURL(vpUrl);}catch(e){} vpUrl=null; }
@@ -2311,7 +2371,7 @@
     toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,
     transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
-    startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
+    startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
   };
 
   // 启动
