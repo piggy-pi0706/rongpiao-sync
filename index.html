@@ -1940,7 +1940,7 @@
       if(stop.indexOf(w[0])>=0||stop.indexOf(w[1])>=0) continue;
       bg[w]=(bg[w]||0)+1;
     }
-    var bgTop=Object.keys(bg).filter(function(k){return bg[k]>=2 && TAGS.indexOf(k)<0;}).map(function(k){return {t:k,n:bg[k]};}).sort(function(a,b){return b.n-a.n;}).slice(0,8);
+    var bgTop=Object.keys(bg).filter(function(k){return bg[k]>=2 && DIM.indexOf(k)<0;}).map(function(k){return {t:k,n:bg[k]};}).sort(function(a,b){return b.n-a.n;}).slice(0,8);
     var html='<div class="rs-head"><span class="rs-title">📊 高频评价汇总</span><span class="rs-sub">共 '+vs.length+' 篇试讲，'+reviews.length+' 篇已写评价 · 自动提取你最常关注的维度（含负面评价）</span></div>';
     if(vidReviewFilter){
       html+='<div class="rev-filter" style="margin:6px 0;font-size:13px;">当前筛选：<b style="color:#c98a00;">「'+esc(vidReviewFilter)+'」</b> <span class="rev-clear" onclick="window.RP.clearVidReviewFilter()">✕ 清除筛选</span></div>';
