@@ -1884,11 +1884,11 @@
     var v=S.videos.find(function(x){return x.id===id;}); if(!v)return;
     v.review=(val||"").trim(); save(); renderVidReviewSummary();
   }
-  // 播放器内边看边评：保存当前视频评价并刷新汇总
+  // 播放器内边看边评：保存当前视频评价并刷新汇总与列表
   function saveVidReviewFromPlayer(val){
     if(!vpCurId)return;
     var v=S.videos.find(function(x){return x.id===vpCurId;}); if(!v)return;
-    v.review=(val||"").trim(); save(); renderVidReviewSummary();
+    v.review=(val||"").trim(); save(); renderVideo(); renderVidReviewSummary();
   }
   // 点击汇总标签：按评价内容筛选试讲列表（同时高亮）
   function filterVideosByReview(lbl){
@@ -2000,6 +2000,11 @@
     });
   }
   function closeVidPlayer(){
+    // 关闭前先把播放器内评价文本框的内容保存到对应视频，避免用户关闭后丢失刚写的评价
+    if(vpCurId){
+      var revEl=document.getElementById("vpReview");
+      if(revEl) saveVidReviewFromPlayer(revEl.value);
+    }
     var ov=document.getElementById("vidPlayer");
     var el=document.getElementById("vidPlayerEl");
     try{ el.pause(); }catch(e){}
@@ -2007,6 +2012,7 @@
     el.removeAttribute("src"); el.load();
     vpResetCtrl();
     if(ov)ov.classList.remove("open");
+    vpCurId=null;
   }
 
   // 简案图片查看器
