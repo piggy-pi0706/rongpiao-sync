@@ -118,6 +118,14 @@
   .cd-num{display:flex;align-items:baseline;gap:8px;margin-top:4px;}
   .cd-unit{font-size:22px;font-weight:800;color:#5b4612;}
   .stat input[type=date]{margin-top:8px;background:rgba(255,255,255,.92);border:none;border-radius:8px;padding:4px 8px;color:var(--cy-text);font-size:13px;}
+  /* 学习总时长：横排三栏（总时长 / 备课时长 / 论文时长） */
+  .stat-row{display:flex;gap:10px;margin-top:4px;}
+  .stat-col{flex:1;background:linear-gradient(135deg,#fbeecb,#f3e0a0);color:#7a6322;border-radius:12px;padding:12px 8px;text-align:center;box-sizing:border-box;min-width:0;}
+  .stat-col .sc-label{font-size:12px;opacity:.92;white-space:nowrap;}
+  .stat-col .sc-num{font-size:21px;font-weight:800;line-height:1.2;margin-top:3px;word-break:break-word;}
+  .stat-col .sc-sub{font-size:11px;opacity:.9;margin-top:2px;}
+  .stat-col.thesis{background:linear-gradient(135deg,#e7f0d8,#cfe3a8);color:#4d6320;}
+  .stat-col.prep{background:linear-gradient(135deg,#fbeecb,#f3e0a0);color:#7a6322;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .todo-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--cy-soft);}
   .todo-item:last-child{border-bottom:none;}
@@ -455,10 +463,22 @@
 
         <div class="card" style="margin-top:16px;">
           <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>学习总时长</h3>
-          <div class="stat total" style="margin-top:4px;">
-            <div class="label">累计专注</div>
-            <div class="num" id="totalSec">0分</div>
-            <div class="sub" id="totalSessions">共 0 次计时记录</div>
+          <div class="stat-row">
+            <div class="stat-col">
+              <div class="sc-label">总时长</div>
+              <div class="sc-num" id="totalSec">0分</div>
+              <div class="sc-sub" id="totalSessions">共 0 次计时</div>
+            </div>
+            <div class="stat-col prep">
+              <div class="sc-label">备课时长</div>
+              <div class="sc-num" id="prepSec">0分</div>
+              <div class="sc-sub" id="prepSessions">其余计时</div>
+            </div>
+            <div class="stat-col thesis">
+              <div class="sc-label">论文时长</div>
+              <div class="sc-num" id="thesisSec">0分</div>
+              <div class="sc-sub" id="thesisSessions">备注含「论文」</div>
+            </div>
           </div>
           <div style="margin-top:12px;font-size:13px;color:var(--cy-sub);">
             近 7 日：<span id="weekSec">0分</span>　|　连续打卡：<span id="streak">0</span> 天
@@ -1100,8 +1120,18 @@
     var tkey=todayStr();
     var today=S.study.daily[tkey]||0;
     document.getElementById("todaySec").textContent=fmtSec(today);
+    // 总时长 / 备课时长 / 论文时长：论文时长 = 计时备注（label）含「论文」的记录；其余计为备课
+    var thesisSec=0, prepSec=0, thesisCount=0, prepCount=0;
+    (S.study.sessions||[]).forEach(function(s){
+      if((s.label||"").indexOf("论文")>=0){ thesisSec+=s.sec; thesisCount++; }
+      else { prepSec+=s.sec; prepCount++; }
+    });
     document.getElementById("totalSec").textContent=fmtSec(S.study.totalSec);
-    document.getElementById("totalSessions").textContent="共 "+S.study.sessions.length+" 次计时记录";
+    document.getElementById("totalSessions").textContent="共 "+S.study.sessions.length+" 次计时";
+    document.getElementById("prepSec").textContent=fmtSec(prepSec);
+    document.getElementById("prepSessions").textContent="备课 "+prepCount+" 次";
+    document.getElementById("thesisSec").textContent=fmtSec(thesisSec);
+    document.getElementById("thesisSessions").textContent="论文 "+thesisCount+" 次";
     document.getElementById("miniTotal").textContent=fmtSec(S.study.totalSec);
     // 待学
     var pending=S.texts.filter(function(x){return !x.done;}).length;
