@@ -126,6 +126,27 @@
   .stat-col .sc-sub{font-size:11px;opacity:.9;margin-top:2px;}
   .stat-col.thesis{background:linear-gradient(135deg,#e7f0d8,#cfe3a8);color:#4d6320;}
   .stat-col.prep{background:linear-gradient(135deg,#fbeecb,#f3e0a0);color:#7a6322;}
+  .stat-col.clickable{cursor:pointer;position:relative;transition:transform .12s ease, box-shadow .12s ease;}
+  .stat-col.clickable:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(180,140,40,.28);}
+  .stat-col.clickable:active{transform:translateY(0);}
+  .stat-col.clickable .sc-num:after{content:"›";position:absolute;right:8px;top:10px;font-size:18px;opacity:.55;font-weight:700;}
+  /* 计时明细集合弹层 */
+  .tc-tabs{display:flex;gap:8px;padding:12px 18px 0;}
+  .tc-tab{font-size:13px;padding:6px 14px;border-radius:20px;background:var(--cy-soft);color:var(--cy-deep);cursor:pointer;border:1px solid transparent;user-select:none;}
+  .tc-tab.active{background:var(--cy-main);color:#5b4612;border-color:var(--cy-main);font-weight:700;}
+  .tc-summary{display:flex;gap:10px;padding:10px 18px;font-size:13px;color:var(--cy-sub);flex-wrap:wrap;}
+  .tc-summary b{color:var(--cy-deep);}
+  .tc-list{padding:4px 18px 18px;}
+  .tc-item{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px dashed var(--cy-soft);}
+  .tc-item:last-child{border-bottom:none;}
+  .tc-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .tc-dot.prep{background:#d99b1c;}
+  .tc-dot.thesis{background:#7fa83a;}
+  .tc-main{flex:1;min-width:0;}
+  .tc-label{font-size:14px;color:var(--cy-text);line-height:1.4;word-break:break-word;}
+  .tc-date{font-size:12px;color:var(--cy-sub);margin-top:2px;}
+  .tc-sec{font-size:14px;font-weight:700;color:var(--cy-deep);white-space:nowrap;}
+  .tc-empty{padding:30px;text-align:center;color:var(--cy-sub);font-size:14px;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .todo-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--cy-soft);}
   .todo-item:last-child{border-bottom:none;}
@@ -464,20 +485,20 @@
         <div class="card" style="margin-top:16px;">
           <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>学习总时长</h3>
           <div class="stat-row">
-            <div class="stat-col">
-              <div class="sc-label">总时长</div>
+            <div class="stat-col clickable" onclick="window.RP.openTimeCollection()" title="点击查看全部计时明细">
+              <div class="sc-label">总时长（点击查看全部）</div>
               <div class="sc-num" id="totalSec">0分</div>
               <div class="sc-sub" id="totalSessions">共 0 次计时</div>
             </div>
             <div class="stat-col prep">
-              <div class="sc-label">备课时长</div>
+              <div class="sc-label">今日备课</div>
               <div class="sc-num" id="prepSec">0分</div>
-              <div class="sc-sub" id="prepSessions">其余计时</div>
+              <div class="sc-sub" id="prepSessions">今日其余计时</div>
             </div>
             <div class="stat-col thesis">
-              <div class="sc-label">论文时长</div>
+              <div class="sc-label">今日论文</div>
               <div class="sc-num" id="thesisSec">0分</div>
-              <div class="sc-sub" id="thesisSessions">备注含「论文」</div>
+              <div class="sc-sub" id="thesisSessions">今日备注含「论文」</div>
             </div>
           </div>
           <div style="margin-top:12px;font-size:13px;color:var(--cy-sub);">
@@ -718,6 +739,23 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
   </button>
   <div class="timer-badge" id="timerBadge">00:00</div>
+
+  <!-- 计时明细集合弹层 -->
+  <div class="modal-mask" id="timeCollectionMask" onclick="if(event.target===this)window.RP.closeTimeCollection()">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>⏱ 全部计时明细</h3>
+        <button type="button" class="x-btn" onclick="window.RP.closeTimeCollection()">×</button>
+      </div>
+      <div class="tc-tabs">
+        <span class="tc-tab active" data-tc="all" onclick="window.RP.renderTimeCollection('all')">全部</span>
+        <span class="tc-tab" data-tc="prep" onclick="window.RP.renderTimeCollection('prep')">备课</span>
+        <span class="tc-tab" data-tc="thesis" onclick="window.RP.renderTimeCollection('thesis')">论文</span>
+      </div>
+      <div class="tc-summary" id="tcSummary"></div>
+      <div class="tc-list" id="tcList"></div>
+    </div>
+  </div>
 
   <!-- 模态：清空确认 -->
   <div class="modal-bg" id="modalBg">
@@ -1104,6 +1142,47 @@
     if(p==="wrong") renderWrong();
   }
 
+  // 计时明细集合：打开弹层，按全部/备课/论文筛选展示所有计时记录
+  var tcFilter="all";
+  function openTimeCollection(){
+    tcFilter="all";
+    var mask=document.getElementById("timeCollectionMask");
+    if(mask){ document.querySelectorAll(".tc-tab").forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tc")==="all");}); mask.classList.add("open"); }
+    renderTimeCollection("all");
+  }
+  function closeTimeCollection(){
+    var mask=document.getElementById("timeCollectionMask");
+    if(mask)mask.classList.remove("open");
+  }
+  function renderTimeCollection(f){
+    tcFilter=f;
+    document.querySelectorAll(".tc-tab").forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tc")===f);});
+    var list=document.getElementById("tcList");
+    var sum=document.getElementById("tcSummary");
+    if(!list)return;
+    // 倒序（最新在前）
+    var items=(S.study.sessions||[]).slice().sort(function(a,b){return b.ts-a.ts;});
+    var totalAll=S.study.totalSec, prepAll=0, thesisAll=0;
+    items.forEach(function(s){ if((s.label||"").indexOf("论文")>=0)thesisAll+=s.sec; else prepAll+=s.sec; });
+    sum.innerHTML='全部累计 <b>'+fmtSec(totalAll)+'</b>　·　备课 <b>'+fmtSec(prepAll)+'</b>　·　论文 <b>'+fmtSec(thesisAll)+'</b>　（共 '+items.length+' 次）';
+    var rows="";
+    var shown=0;
+    items.forEach(function(s){
+      var isThesis=(s.label||"").indexOf("论文")>=0;
+      if(f==="prep"&&isThesis) return;
+      if(f==="thesis"&&!isThesis) return;
+      shown++;
+      var d=new Date(s.ts);
+      var ds=todayStr(d)+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+      rows+='<div class="tc-item">'+
+        '<span class="tc-dot '+(isThesis?"thesis":"prep")+'"></span>'+
+        '<div class="tc-main"><div class="tc-label">'+esc(s.label||"专注学习")+'</div><div class="tc-date">'+ds+'</div></div>'+
+        '<div class="tc-sec">'+fmtSec(s.sec)+'</div>'+
+      '</div>';
+    });
+    list.innerHTML= rows || '<div class="tc-empty">暂无符合条件的计时记录。</div>';
+  }
+
   // 首页
   function renderHome(){
     // 倒计时
@@ -1120,18 +1199,20 @@
     var tkey=todayStr();
     var today=S.study.daily[tkey]||0;
     document.getElementById("todaySec").textContent=fmtSec(today);
-    // 总时长 / 备课时长 / 论文时长：论文时长 = 计时备注（label）含「论文」的记录；其余计为备课
+    // 总时长 = 全部累计；备课时长 / 论文时长 = 仅今日（论文=备注 label 含「论文」）
+    var tkey0=todayStr();
     var thesisSec=0, prepSec=0, thesisCount=0, prepCount=0;
     (S.study.sessions||[]).forEach(function(s){
+      if(todayStr(new Date(s.ts))!==tkey0) return; // 只统计今天
       if((s.label||"").indexOf("论文")>=0){ thesisSec+=s.sec; thesisCount++; }
       else { prepSec+=s.sec; prepCount++; }
     });
     document.getElementById("totalSec").textContent=fmtSec(S.study.totalSec);
-    document.getElementById("totalSessions").textContent="共 "+S.study.sessions.length+" 次计时";
+    document.getElementById("totalSessions").textContent="共 "+S.study.sessions.length+" 次计时 · 点击查看";
     document.getElementById("prepSec").textContent=fmtSec(prepSec);
-    document.getElementById("prepSessions").textContent="备课 "+prepCount+" 次";
+    document.getElementById("prepSessions").textContent="今日备课 "+prepCount+" 次";
     document.getElementById("thesisSec").textContent=fmtSec(thesisSec);
-    document.getElementById("thesisSessions").textContent="论文 "+thesisCount+" 次";
+    document.getElementById("thesisSessions").textContent="今日论文 "+thesisCount+" 次";
     document.getElementById("miniTotal").textContent=fmtSec(S.study.totalSec);
     // 待学
     var pending=S.texts.filter(function(x){return !x.done;}).length;
@@ -2407,7 +2488,7 @@
     toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,
     transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
-    startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan
+    startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan,openTimeCollection:openTimeCollection,closeTimeCollection:closeTimeCollection,renderTimeCollection:renderTimeCollection
   };
 
   // 启动
