@@ -1490,17 +1490,18 @@
       if(s.recs.length){
         recsHtml='<div class="sp-recs">';
         s.recs.forEach(function(rr){
-          var audioTag='<audio controls'+(rr.audio?(' src="'+rr.audio+'"'):'')+' data-rec="'+rr.id+'"></audio>';
+          var isVid=(rr.kind==="video");
+          var mediaTag=isVid?('<video controls preload="metadata" style="max-width:340px;border-radius:8px;"'+(rr.audio?(' src="'+rr.audio+'"'):'')+' data-rec="'+rr.id+'"></video>'):('<audio controls'+(rr.audio?(' src="'+rr.audio+'"'):'')+' data-rec="'+rr.id+'"></audio>');
           var tr=rr.transcript||"";
           var hasTr=tr&&tr.trim();
           recsHtml+='<div class="rec-item">'+
             '<div class="rec-media">'+
-              '<div class="rec-line"><input class="rec-name-input" value="'+esc(rr.name)+'" onchange="window.RP.renameStructRec(\''+s.id+'\',\''+rr.id+'\',this.value)">'+ audioTag +'</div>'+
+              '<div class="rec-line"><input class="rec-name-input" value="'+esc(rr.name)+'" onchange="window.RP.renameStructRec(\''+s.id+'\',\''+rr.id+'\',this.value)">'+ mediaTag +'</div>'+
               '<div class="rec-line"><span class="rec-dur">时长 '+fmtSec(rr.duration)+'</span><button class="icon-btn del" title="删除" onclick="window.RP.delStructRec(\''+s.id+'\',\''+rr.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>'+
             '</div>'+
             '<div class="rec-transcript">'+
-              '<div class="tr-hint">'+(hasTr?'文字稿已自动生成（录音时同步转写），可直接编辑。':'此录音未包含自动转写（可能是升级前录的旧录音）。可手动输入，或重新录音自动生成。')+'</div>'+
-              '<textarea class="transcript" data-tr="'+rr.id+'" placeholder="录音时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveTranscript(\''+s.id+'\',\''+rr.id+'\',this.value)">'+(tr?esc(tr):'')+'</textarea>'+
+              '<div class="tr-hint">'+(hasTr?'文字稿已自动生成（录像时同步转写），可直接编辑。':'此录音/视频未包含自动转写（可能是升级前录的旧录音/视频）。可手动输入，或重新录像自动生成。')+'</div>'+
+              '<textarea class="transcript" data-tr="'+rr.id+'" placeholder="录像时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveTranscript(\''+s.id+'\',\''+rr.id+'\',this.value)">'+(tr?esc(tr):'')+'</textarea>'+
             '</div>'+
             '</div>';
         });
@@ -1522,7 +1523,7 @@
         '<div class="tool-row">'+
           '<button class="btn" onclick="window.RP.toggleAns(\''+s.id+'\',this)">显示答案/结构</button>'+
           '<button class="btn" onclick="window.RP.startTimerFor(\'结构化：'+esc(s.type)+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>计时练习</button>'+
-          '<button class="btn rec-btn" id="spRecBtn_'+s.id+'" onclick="window.RP.toggleStructRec(\''+s.id+'\',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>录音作答</button>'+
+          '<button class="btn rec-btn" id="spRecBtn_'+s.id+'" onclick="window.RP.toggleStructRec(\''+s.id+'\',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>视频作答</button>'+
           '<span class="rec-status" id="spRecStat_'+s.id+'"></span>'+
         '</div>'+
         '<div class="sp-struct" style="display:none;" data-struct="'+s.id+'"><b>答题结构</b><br>'+esc(s.struct)+'</div>'+
@@ -1534,7 +1535,7 @@
     // 异步从 IndexedDB 拉取录音 blob 渲染
     S.struct.forEach(function(s){ (s.recs||[]).forEach(function(rr){
       if(rr.audio)return;
-      var el=document.querySelector('audio[data-rec="'+rr.id+'"]');
+      var el=document.querySelector('[data-rec="'+rr.id+'"]');
       if(el)structGet(rr.id,function(blob){ if(blob)el.src=URL.createObjectURL(blob); });
     }); });
     var bc=document.getElementById("bankCount"); if(bc)bc.textContent=STRUCT_BANK.length;
@@ -1560,7 +1561,7 @@
     S.struct=S.struct.filter(function(s){return s.id!==id;});
     save();renderStruct();
   }
-  // 结构化题目录音作答（独立 recorder，避免与自我介绍录音冲突）；录音时同步自动转写
+  // 结构化题目视频作答（独立 recorder，避免与自我介绍/试讲录像冲突）；录像时同步自动转写
   var sMediaRec=null,sMediaStream=null,sRecChunks=[],sRecStart=0,sRecTimer=null,sRecItem=null,sRecSR=null,sRecFinal="";
   function toggleStructRec(id,btn){
     if(sMediaRec&&sMediaRec.state==="recording"){
@@ -1569,13 +1570,14 @@
       return;
     }
     if(mediaRec&&mediaRec.state==="recording"){ alert("请先停止「自我介绍」正在进行的录音。"); return; }
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert("当前环境不支持录音（需 https/localhost）。"); return; }
+    if(vRec&&vRec.state==="recording"){ alert("请先停止「试讲视频」正在进行的录制。"); return; }
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert("当前环境不支持录像（需 https/localhost）。"); return; }
     var item=S.struct.find(function(x){return x.id===id;}); if(!item)return;
-    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(function(stream){
       sMediaStream=stream; sRecChunks=[]; sRecItem=item;
       var rid="sr"+Date.now();
       var name="作答"+((item.recs&&item.recs.length)||0);
-      // 录音时同步启动语音转写（Web Speech API；不支持则降级为手动输入）
+      // 录像时同步启动语音转写（Web Speech API；不支持则降级为手动输入）
       var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
       sRecFinal=""; sRecSR=null;
       if(SR){
@@ -1591,37 +1593,37 @@
           recog.start(); sRecSR=recog;
         }catch(e){ sRecSR=null; }
       }
-      var mime="audio/webm";
-      try{ sMediaRec=new MediaRecorder(stream); }catch(e){ sMediaRec=new MediaRecorder(stream,{mimeType:mime}); }
+      var mime=pickVideoMime();
+      try{ sMediaRec=new MediaRecorder(stream,{mimeType:mime}); }catch(e){ sMediaRec=new MediaRecorder(stream); }
       sMediaRec.ondataavailable=function(e){ if(e.data.size>0)sRecChunks.push(e.data); };
       sMediaRec.onstop=function(){
         var blob=new Blob(sRecChunks,{type:mime});
         var sizeMB=blob.size/1048576;
-        if(sizeMB>3.5){ alert("这条录音约 "+sizeMB.toFixed(1)+"MB，本地存储可能超限，建议缩短时长或导出备份后清理。"); }
+        if(sizeMB>30){ alert("这条视频约 "+sizeMB.toFixed(1)+"MB，本地存储可能较大，建议缩短时长或导出备份后清理。"); }
         structPut(rid,blob,function(ok){
           if(!item.recs)item.recs=[];
           var recDur=Math.floor((Date.now()-sRecStart)/1000);
-          item.recs.push({id:rid,name:name,duration:recDur,createdAt:Date.now(),transcript:(sRecFinal||""),judge:null});
-          // 录音作答时长计入学习总时长
+          item.recs.push({id:rid,name:name,duration:recDur,createdAt:Date.now(),transcript:(sRecFinal||""),judge:null,kind:"video"});
+          // 视频作答时长计入学习总时长
           recordTimer(recDur, "结构化作答："+item.type, null);
           if(sRecSR){ try{ sRecSR.stop(); }catch(_){} sRecSR=null; }
           save();renderStruct();renderHome();
-          if(!ok)alert("录音已记录，但媒体库(IndexedDB)写入异常，建议尽快导出备份。");
+          if(!ok)alert("视频已记录，但媒体库(IndexedDB)写入异常，建议尽快导出备份。");
         });
         if(sMediaStream)sMediaStream.getTracks().forEach(function(t){t.stop();});
         clearInterval(sRecTimer);
       };
       sMediaRec.start();
       sRecStart=Date.now();
-      btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>停止';
+      btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>停止';
       var stat=document.getElementById("spRecStat_"+id);
-      if(stat)stat.innerHTML='<span class="rec-dot"></span>录音中…';
-      sRecTimer=setInterval(function(){ if(stat)stat.innerHTML='<span class="rec-dot"></span>录音中 '+fmtSec((Date.now()-sRecStart)/1000); },500);
-    }).catch(function(err){ alert("无法访问麦克风："+err.message); });
+      if(stat)stat.innerHTML='<span class="rec-dot"></span>录制中…';
+      sRecTimer=setInterval(function(){ if(stat)stat.innerHTML='<span class="rec-dot"></span>录制中 '+fmtSec((Date.now()-sRecStart)/1000); },500);
+    }).catch(function(err){ alert("无法访问摄像头："+err.message); });
   }
   function delStructRec(sid,rid){
     var item=S.struct.find(function(x){return x.id===sid;}); if(!item||!item.recs)return;
-    if(!confirm("删除这段作答录音？"))return;
+    if(!confirm("删除这段作答视频？"))return;
     item.recs=item.recs.filter(function(r){return r.id!==rid;});
     save();structDel(rid);renderStruct();
   }
@@ -1637,9 +1639,9 @@
     var hint=document.getElementById("trHint_"+rid);
     if(ta)ta.focus();
     if(rr.transcript&&rr.transcript.trim()){
-      if(hint)hint.textContent="文字稿已自动生成（录音时同步转写），可直接在框内编辑。";
+      if(hint)hint.textContent="文字稿已自动生成（录像时同步转写），可直接在框内编辑。";
     }else{
-      if(hint)hint.textContent="此录音未包含自动转写（可能是升级前录的旧录音）。可在下方文本框手动输入/粘贴作答；重新录音即可自动生成文字稿。";
+      if(hint)hint.textContent="此录音/视频未包含自动转写（可能是升级前录的旧录音/视频）。可在下方文本框手动输入/粘贴作答；重新录像即可自动生成文字稿。";
     }
   }
   function saveTranscript(sid,rid,val){
@@ -1663,7 +1665,7 @@
       html+='<div class="sp-card is-wrong"><div class="head-row"><span class="sp-type">'+esc(s.type)+'</span>'+
         '<button class="btn small" onclick="window.RP.toggleWrong(\''+s.id+'\')">移出错题本</button></div>'+
         '<div class="sp-q">'+esc(s.q)+'</div>'+
-        '<div style="font-size:13px;color:var(--cy-sub);margin-top:6px;">已作答录音 '+recN+' 段 · <a href="javascript:void(0)" onclick="window.RP.goStruct()">去练习 →</a></div>'+
+        '<div style="font-size:13px;color:var(--cy-sub);margin-top:6px;">已作答 '+recN+' 段 · <a href="javascript:void(0)" onclick="window.RP.goStruct()">去练习 →</a></div>'+
         '</div>';
     });
     list.innerHTML=html;
@@ -1841,6 +1843,7 @@
   // 录制试讲视频：textId 为空=通用试讲；传入课文 id=该课文逐篇视频。时长计入总学习时长，仅存本地 IndexedDB（不云端同步）。
   function startVideoRec(textId){
     if(vRec&&vRec.state==="recording"){ alert("已有视频正在录制，请先停止当前录制。"); return; }
+    if(sMediaRec&&sMediaRec.state==="recording"){ alert("请先停止「结构化题目」正在进行的视频作答。"); return; }
     if(vRec&&vRec.state!=="inactive"){ try{ vRec.stop(); }catch(e){} } // 上一段若还在收尾，先停掉
     var chunks=[]; // 本次录制独立的块数组，杜绝与上次串数据
     var myToken=++vidToken;
