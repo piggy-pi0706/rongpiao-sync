@@ -217,6 +217,10 @@
   .sp-recs .rec-item .rec-transcript{flex:1;min-width:240px;background:#fffaf0;border:1px solid #f4e4b5;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;}
   .sp-recs .rec-item .rec-transcript .tr-hint{font-size:12px;color:var(--cy-sub);line-height:1.4;}
   .sp-recs .rec-item .transcript{width:100%;flex:1;min-height:70px;border:1px solid var(--cy-mid);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;resize:vertical;background:#fff;color:var(--cy-text);}
+  .sp-recs .rec-item .sreview{width:100%;flex:1;min-height:54px;border:1px solid var(--cy-mid);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;resize:vertical;background:#fff;color:var(--cy-text);}
+  .sp-recs .rec-item .rec-review{width:100%;flex-basis:100%;display:flex;flex-direction:column;gap:6px;margin-top:2px;}
+  .sp-recs .rec-item .rec-eval{margin-left:8px;padding:2px 8px;font-size:12px;background:#c98a00;color:#fff;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;}
+  .sp-recs .rec-item .rec-eval:hover{background:#b87d00;}
   .sp-recs .rec-item .judge-box{margin-top:8px;background:var(--cy-soft);border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.6;color:var(--cy-text);white-space:pre-wrap;}
   .sp-recs .rec-item .judge-score{font-weight:800;color:var(--cy-deep);font-size:15px;}
   .rec-status{font-size:13px;color:var(--cy-deep);}
@@ -592,6 +596,7 @@
             <button class="btn" id="btnRandomBank">随机补充3题</button>
           </div>
         </div>
+        <div class="rev-summary" id="structReviewSummary"></div>
         <div id="structList"></div>
         <div class="card">
           <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>添加我的结构化题</h3>
@@ -1481,27 +1486,42 @@
   // 结构化
   function renderStruct(){
     var html="";
-    if(S.struct.length===0){ html='<div style="color:var(--cy-sub);font-size:14px;">练习列表为空。点上方「从题库补充」或「添加我的结构化题」加入题目吧。</div>'; }
+    if(structReviewFilter){
+      html+='<div class="rev-filter" style="margin:6px 0 12px;font-size:13px;">当前筛选：<b style="color:#c98a00;">「'+esc(structReviewFilter)+'」</b> <span class="rev-clear" onclick="window.RP.clearStructReviewFilter()">✕ 清除筛选</span></div>';
+    }
+    if(S.struct.length===0){ html+='<div style="color:var(--cy-sub);font-size:14px;">练习列表为空。点上方「从题库补充」或「添加我的结构化题」加入题目吧。</div>'; }
     S.struct.slice().reverse().forEach(function(s){
       var fam=s.fam||"低";
       if(!s.recs)s.recs=[];
       if(!s.wrong)s.wrong=false;
+      var recs=(s.recs||[]);
+      var showRecs=recs;
+      if(structReviewFilter){
+        showRecs=recs.filter(function(rr){ return (rr.review||"").indexOf(structReviewFilter)>=0; });
+        if(showRecs.length===0) return;
+      }
       var recsHtml="";
-      if(s.recs.length){
+      if(showRecs.length){
         recsHtml='<div class="sp-recs">';
-        s.recs.forEach(function(rr){
+        showRecs.forEach(function(rr){
           var isVid=(rr.kind==="video");
           var mediaTag=isVid?('<video controls preload="metadata" style="max-width:340px;border-radius:8px;"'+(rr.audio?(' src="'+rr.audio+'"'):'')+' data-rec="'+rr.id+'"></video>'):('<audio controls'+(rr.audio?(' src="'+rr.audio+'"'):'')+' data-rec="'+rr.id+'"></audio>');
           var tr=rr.transcript||"";
           var hasTr=tr&&tr.trim();
+          var evalBtn=isVid?('<button class="btn small rec-eval" onclick="window.RP.openVidPlayer(\''+rr.id+'\',\'struct\')"><svg viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>边看边评</button>'):'';
+          var review=rr.review||"";
           recsHtml+='<div class="rec-item">'+
             '<div class="rec-media">'+
               '<div class="rec-line"><input class="rec-name-input" value="'+esc(rr.name)+'" onchange="window.RP.renameStructRec(\''+s.id+'\',\''+rr.id+'\',this.value)">'+ mediaTag +'</div>'+
-              '<div class="rec-line"><span class="rec-dur">时长 '+fmtSec(rr.duration)+'</span><button class="icon-btn del" title="删除" onclick="window.RP.delStructRec(\''+s.id+'\',\''+rr.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>'+
+              '<div class="rec-line"><span class="rec-dur">时长 '+fmtSec(rr.duration)+(isVid?evalBtn:'')+'</span><button class="icon-btn del" title="删除" onclick="window.RP.delStructRec(\''+s.id+'\',\''+rr.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>'+
             '</div>'+
             '<div class="rec-transcript">'+
               '<div class="tr-hint">'+(hasTr?'文字稿已自动生成（录像时同步转写），可直接编辑。':'此录音/视频未包含自动转写（可能是升级前录的旧录音/视频）。可手动输入，或重新录像自动生成。')+'</div>'+
               '<textarea class="transcript" data-tr="'+rr.id+'" placeholder="录像时同步转写的文字稿会自动显示在这里，也可手动输入/修改" onblur="window.RP.saveTranscript(\''+s.id+'\',\''+rr.id+'\',this.value)">'+(tr?esc(tr):'')+'</textarea>'+
+            '</div>'+
+            '<div class="rec-review">'+
+              '<div class="tr-hint">我的评价（点「边看边评」在播放器里同步写，或在此直接写；负面如「不够流畅」会被自动汇总）</div>'+
+              '<textarea class="sreview" data-srev="'+rr.id+'" placeholder="例如：教态自然、逻辑清晰；负面如：不够流畅、板书弱" onblur="window.RP.saveStructReview(\''+s.id+'\',\''+rr.id+'\',this.value)">'+(review?esc(review):'')+'</textarea>'+
             '</div>'+
             '</div>';
         });
@@ -1539,6 +1559,7 @@
       if(el)structGet(rr.id,function(blob){ if(blob)el.src=URL.createObjectURL(blob); });
     }); });
     var bc=document.getElementById("bankCount"); if(bc)bc.textContent=STRUCT_BANK.length;
+    renderStructReviewSummary();
   }
   function setFam(id,level){
     var s=S.struct.find(function(x){return x.id===id;}); if(!s)return;
@@ -1998,11 +2019,20 @@
     var v=S.videos.find(function(x){return x.id===id;}); if(!v)return;
     v.review=(val||"").trim(); save(); renderVidReviewSummary();
   }
-  // 播放器内边看边评：保存当前视频评价并刷新汇总与列表
+  // 播放器内边看边评：保存当前视频评价并刷新汇总与列表（兼容试讲与结构化作答）
   function saveVidReviewFromPlayer(val){
     if(!vpCurId)return;
-    var v=S.videos.find(function(x){return x.id===vpCurId;}); if(!v)return;
-    v.review=(val||"").trim(); save(); renderVideo(); renderVidReviewSummary();
+    var v;
+    if(vpCurCtx==="struct"){
+      v=null;
+      S.struct.forEach(function(s){ (s.recs||[]).forEach(function(rr){ if(rr.id===vpCurId) v=rr; }); });
+    }else{
+      v=S.videos.find(function(x){return x.id===vpCurId;});
+    }
+    if(!v)return;
+    v.review=(val||"").trim(); save();
+    if(vpCurCtx==="struct"){ renderStruct(); renderStructReviewSummary(); }
+    else { renderVideo(); renderVidReviewSummary(); }
   }
   // 点击汇总标签：按评价内容筛选试讲列表（同时高亮）
   function filterVideosByReview(lbl){
@@ -2080,17 +2110,106 @@
       if(s){ var lbl=s.getAttribute("data-lbl"); if(lbl) window.RP.filterVideosByReview(lbl); }
     };
   }
+  // 结构化作答：保存单段评价（列表内文本框）
+  function saveStructReview(sid, rid, val){
+    var s=S.struct.find(function(x){return x.id===sid;}); if(!s)return;
+    var rr=(s.recs||[]).find(function(r){return r.id===rid;}); if(!rr)return;
+    rr.review=(val||"").trim(); save(); renderStructReviewSummary();
+  }
+  function filterStructByReview(lbl){ structReviewFilter=lbl; renderStruct(); }
+  function clearStructReviewFilter(){ structReviewFilter=null; renderStruct(); }
+  // 高频评价汇总（结构化作答）：与试讲同源逻辑，聚合全部作答视频的评价维度（含负面）
+  function renderStructReviewSummary(){
+    var box=document.getElementById("structReviewSummary");
+    if(!box)return;
+    var allRecs=[];
+    S.struct.forEach(function(s){ (s.recs||[]).forEach(function(rr){ allRecs.push(rr); }); });
+    var reviews=allRecs.map(function(rr){return rr.review||"";}).filter(function(t){return t.trim();});
+    if(allRecs.length===0){
+      box.innerHTML='<div class="rev-empty">还没有结构化作答视频。录一段并写下评价后，这里会自动汇总高频评价维度。</div>';
+      return;
+    }
+    var DIM=["教态","板书","导入","情境","互动","朗读","字词","提问","过渡","评价语","时间","节奏","重难点","情感","普通话","语言","环节","声音","目标","语速","拓展","自然","亲切","清晰","流畅","完整","充分","生动","重点"];
+    var PRE_NEG=["不够","缺乏","缺少","不足","欠缺","有待","不太","没有","未"];
+    var SUF_NEG=["弱","乱","慢","快","生硬","平淡","模糊","单调","拖沓","卡顿","过多","过少","偏快","偏慢","过快","过慢","不标准","不突出","不明显","不工整","不生动"];
+    var cnt={};
+    allRecs.forEach(function(rr){
+      var low=(rr.review||"").toLowerCase();
+      DIM.forEach(function(d){
+        var dl=d.toLowerCase();
+        var idx=0;
+        while((idx=low.indexOf(dl,idx))>=0){
+          var pre=low.substring(Math.max(0,idx-3),idx);
+          var post=low.substring(idx+dl.length,idx+dl.length+3);
+          var lbl=null;
+          if(idx>0){ var c1=low.charAt(idx-1); if(c1==="不"||c1==="没") lbl=(c1==="不"?"不":"没")+d; }
+          if(!lbl){ for(var p=0;p<PRE_NEG.length;p++){ if(pre.indexOf(PRE_NEG[p])>=0||post.indexOf(PRE_NEG[p])>=0){ lbl=PRE_NEG[p]+d; break; } } }
+          if(!lbl){ for(var q=0;q<SUF_NEG.length;q++){ if(pre.indexOf(SUF_NEG[q])>=0||post.indexOf(SUF_NEG[q])>=0){ lbl=d+SUF_NEG[q]; break; } } }
+          if(!lbl) lbl=d;
+          cnt[lbl]=(cnt[lbl]||0)+1;
+          idx+=dl.length;
+        }
+      });
+    });
+    var ranked=Object.keys(cnt).map(function(k){return {t:k,n:cnt[k]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+    var stop="的了是我你他她们和在与对把被着过也都就还很太更这那哪吗呢啊吧不没有个可以应该需要比较老师学生地得又再才让给向从到之其等及或并若如为于以而则且但虽因果所每各该当将已说好".split("");
+    var all=reviews.join("").replace(/[^\u4e00-\u9fa5]/g,"");
+    var bg={};
+    for(var i=0;i+1<all.length;i++){
+      var w=all.substr(i,2);
+      if(stop.indexOf(w[0])>=0||stop.indexOf(w[1])>=0) continue;
+      bg[w]=(bg[w]||0)+1;
+    }
+    var bgTop=Object.keys(bg).filter(function(k){return bg[k]>=2 && DIM.indexOf(k)<0;}).map(function(k){return {t:k,n:bg[k]};}).sort(function(a,b){return b.n-a.n;}).slice(0,8);
+    var html='<div class="rs-head"><span class="rs-title">高频评价汇总（结构化作答）</span><span class="rs-sub">共 '+allRecs.length+' 段作答，'+reviews.length+' 段已写评价 · 自动提取你最常关注的维度（含负面评价）</span></div>';
+    if(structReviewFilter){
+      html+='<div class="rev-filter" style="margin:6px 0;font-size:13px;">当前筛选：<b style="color:#c98a00;">「'+esc(structReviewFilter)+'」</b> <span class="rev-clear" onclick="window.RP.clearStructReviewFilter()">✕ 清除筛选</span></div>';
+    }
+    if(ranked.length){
+      var hot=Math.max(2,Math.ceil(allRecs.length/2));
+      html+='<div class="rev-tags">';
+      ranked.forEach(function(x){
+        var act=(structReviewFilter===x.t)?' style="outline:2px solid #c98a00;"':'';
+        html+='<span class="rev-tag'+(x.n>=hot?' hot':'')+'" data-lbl="'+esc(x.t)+'"'+act+'>'+esc(x.t)+' <b>×'+x.n+'</b></span>';
+      });
+      html+='</div>';
+    }else{
+      html+='<div class="rev-empty">暂未识别到常见评价维度，可在各作答下写下评价（如：教态自然、逻辑清晰；负面如：不够流畅、板书弱）。</div>';
+    }
+    if(bgTop.length){
+      html+='<div class="rev-other">其他高频词：'+bgTop.map(function(x){return esc(x.t)+'（×'+x.n+'）';}).join('、')+'</div>';
+    }
+    box.innerHTML=html;
+    box.onclick=function(e){
+      var s=e.target.closest && e.target.closest("[data-lbl]");
+      if(s){ var lbl=s.getAttribute("data-lbl"); if(lbl) window.RP.filterStructByReview(lbl); }
+    };
+  }
   // 共享视频播放器：单实例，避免多段视频同时解码导致音画不同步 / 同时播放
   var vpUrl=null;
   var vpCurId=null;
-  var vidReviewFilter=null; // 评价汇总标签筛选
-  function openVidPlayer(id){
-    var v=S.videos.find(function(x){return x.id===id;}); if(!v)return;
+  var vpCurCtx="vid"; // 当前播放视频来源：vid=试讲，struct=结构化作答
+  var vidReviewFilter=null; // 试讲评价汇总标签筛选
+  var structReviewFilter=null; // 结构化评价汇总标签筛选
+  function openVidPlayer(id, ctx){
+    ctx=ctx||"vid";
+    var v, getName, getBlob;
+    if(ctx==="struct"){
+      v=null;
+      S.struct.forEach(function(s){ (s.recs||[]).forEach(function(rr){ if(rr.id===id) v=rr; }); });
+      if(!v)return;
+      getName=v.name||"结构化作答回放";
+      getBlob=function(cb){ structGet(id, cb); };
+    }else{
+      v=S.videos.find(function(x){return x.id===id;}); if(!v)return;
+      getName=v.name||"试讲回放";
+      getBlob=function(cb){ vidGet(id, cb); };
+    }
     var ov=document.getElementById("vidPlayer");
     var el=document.getElementById("vidPlayerEl");
     var title=document.getElementById("vpTitle");
     if(!ov||!el)return;
-    vpCurId=id;
+    vpCurCtx=ctx; vpCurId=id;
     // 同步载入该视频已有评价，方便边看边评
     var revEl=document.getElementById("vpReview");
     if(revEl)revEl.value=(v.review||"");
@@ -2098,9 +2217,9 @@
     try{ el.pause(); }catch(e){}
     if(vpUrl){ try{URL.revokeObjectURL(vpUrl);}catch(e){} vpUrl=null; }
     el.removeAttribute("src"); el.load();
-    title.textContent=v.name||"试讲回放";
+    title.textContent=getName;
     vpKnownDur=v.duration||0;
-    vidGet(id,function(blob){
+    getBlob(function(blob){
       if(!blob){ alert("未找到视频数据（可能来自其他设备/已清理）。"); return; }
       vpUrl=URL.createObjectURL(blob);
       el.src=vpUrl;
@@ -2488,7 +2607,7 @@
     toggleDone:toggleDone,removeText:removeText,startTimerFor:startTimerFor,openTimer:openTimer,closeTimer:closeTimer,
     toggleAns:toggleAns,delIntro:delIntro,renameIntro:renameIntro,delVid:delVid,vidDownload:vidDownload,
     delStruct:delStruct,addFromBank:addFromBank,randomBank:randomBank,openBank:openBank,closeBank:closeBank,
-    toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,
+    toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,saveStructReview:saveStructReview,filterStructByReview:filterStructByReview,clearStructReviewFilter:clearStructReviewFilter,renderStructReviewSummary:renderStructReviewSummary,
     transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
     startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan,openTimeCollection:openTimeCollection,closeTimeCollection:closeTimeCollection,renderTimeCollection:renderTimeCollection
