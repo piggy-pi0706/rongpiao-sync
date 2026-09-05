@@ -130,6 +130,24 @@
   .stat-col.clickable:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(180,140,40,.28);}
   .stat-col.clickable:active{transform:translateY(0);}
   .stat-col.clickable .sc-num:after{content:"›";position:absolute;right:8px;top:10px;font-size:18px;opacity:.55;font-weight:700;}
+  /* 学习时段钟表盘 */
+  .clock-card{background:var(--card);border:1px solid var(--cy-soft);border-radius:var(--radius);padding:14px 12px;margin-top:12px;box-shadow:var(--shadow);}
+  .clock-title{font-size:14px;font-weight:700;color:var(--cy-deep);display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .clock-title svg{width:16px;height:16px;}
+  .clock-wrap{position:relative;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
+  #studyClock{width:220px;height:220px;}
+  .clock-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:700;color:var(--cy-sub);background:#fffdf3;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(201,138,0,.12);}
+  .clock-legend{display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--cy-text);min-width:110px;}
+  .clock-legend .leg{display:flex;align-items:center;gap:6px;}
+  .clock-legend .leg i{width:12px;height:12px;border-radius:50%;display:inline-block;}
+  .clock-legend .am i{background:#f4a261;}
+  .clock-legend .pm i{background:#48b0a6;}
+  .clock-tip{width:100%;text-align:center;font-size:12px;color:var(--cy-sub);margin-top:6px;}
+  @media(max-width:480px){
+    #studyClock{width:180px;height:180px;}
+    .clock-center{width:36px;height:36px;font-size:10px;}
+    .clock-legend{flex-direction:row;justify-content:center;min-width:auto;}
+  }
   /* 计时明细集合弹层 */
   .tc-tabs{display:flex;gap:8px;padding:12px 18px 0;}
   .tc-tab{font-size:13px;padding:6px 14px;border-radius:20px;background:var(--cy-soft);color:var(--cy-deep);cursor:pointer;border:1px solid transparent;user-select:none;}
@@ -504,6 +522,18 @@
               <div class="sc-num" id="thesisSec">0分</div>
               <div class="sc-sub" id="thesisSessions">今日备注含「论文」</div>
             </div>
+          </div>
+          <div class="clock-card">
+            <div class="clock-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>今日学习时段分布</div>
+            <div class="clock-wrap">
+              <svg id="studyClock" viewBox="0 0 100 100"></svg>
+              <div class="clock-center">24h</div>
+              <div class="clock-legend">
+                <span class="leg am"><i></i>上午 0-12点</span>
+                <span class="leg pm"><i></i>下午 12-24点</span>
+              </div>
+            </div>
+            <div class="clock-tip" id="clockTip">钟表盘按今日每次计时的起止时间绘制，上午/下午用不同颜色区分。</div>
           </div>
           <div style="margin-top:12px;font-size:13px;color:var(--cy-sub);">
             近 7 日：<span id="weekSec">0分</span>　|　连续打卡：<span id="streak">0</span> 天
@@ -1188,6 +1218,78 @@
     list.innerHTML= rows || '<div class="tc-empty">暂无符合条件的计时记录。</div>';
   }
 
+  // 学习时段钟表盘：按今日计时记录绘制24小时圆环，区分上午/下午
+  function polar(cx,cy,r,angle){ return {x:cx+r*Math.cos(angle),y:cy+r*Math.sin(angle)}; }
+  function annularArc(cx,cy,rIn,rOut,startRatio,endRatio){
+    var a0=startRatio*2*Math.PI-Math.PI/2;
+    var a1=endRatio*2*Math.PI-Math.PI/2;
+    var large=(endRatio-startRatio)>0.5?1:0;
+    var p1=polar(cx,cy,rOut,a0), p2=polar(cx,cy,rOut,a1);
+    var p3=polar(cx,cy,rIn,a1), p4=polar(cx,cy,rIn,a0);
+    return "M "+p1.x.toFixed(2)+","+p1.y.toFixed(2)+" A "+rOut+","+rOut+" 0 "+large+" 1 "+p2.x.toFixed(2)+","+p2.y.toFixed(2)+" L "+p3.x.toFixed(2)+","+p3.y.toFixed(2)+" A "+rIn+","+rIn+" 0 "+large+" 0 "+p4.x.toFixed(2)+","+p4.y.toFixed(2)+" Z";
+  }
+  function splitDaySegments(startMin,endMin){
+    var segs=[];
+    if(endMin<=720){ segs.push({start:startMin,end:endMin,pm:false}); }
+    else if(startMin>=720){ segs.push({start:startMin,end:endMin,pm:true}); }
+    else { segs.push({start:startMin,end:720,pm:false}); segs.push({start:720,end:endMin,pm:true}); }
+    return segs;
+  }
+  function renderStudyClock(){
+    var svg=document.getElementById("studyClock"); if(!svg)return;
+    var tkey=todayStr();
+    var sessions=(S.study.sessions||[]).filter(function(s){ return todayStr(new Date(s.ts||Date.now()))===tkey; }).sort(function(a,b){return (a.ts||0)-(b.ts||0);});
+    var cx=50,cy=50;
+    var html="";
+    // 外圈底环
+    html+='<circle cx="'+cx+'" cy="'+cy+'" r="42" fill="none" stroke="#f3e0a0" stroke-width="1" opacity="0.5"/>';
+    // 小时刻度（每2小时一条主刻度）
+    for(var h=0;h<24;h++){
+      var ratio=h/24;
+      var angle=ratio*2*Math.PI-Math.PI/2;
+      var isMain=(h%6===0);
+      var r1=isMain?38:40;
+      var r2=42;
+      var p1=polar(cx,cy,r1,angle), p2=polar(cx,cy,r2,angle);
+      html+='<line x1="'+p1.x.toFixed(2)+'" y1="'+p1.y.toFixed(2)+'" x2="'+p2.x.toFixed(2)+'" y2="'+p2.y.toFixed(2)+'" stroke="#e9b53b" stroke-width="'+(isMain?1.2:0.5)+'" opacity="'+(isMain?0.7:0.4)+'"/>';
+      if(isMain){
+        var pr=polar(cx,cy,34.5,angle);
+        html+='<text x="'+pr.x.toFixed(2)+'" y="'+pr.y.toFixed(2)+'" text-anchor="middle" dominant-baseline="middle" font-size="3.2" fill="#9c8450" font-weight="700">'+h+'</text>';
+      }
+    }
+    // 中心点
+    html+='<circle cx="'+cx+'" cy="'+cy+'" r="2.2" fill="#c98a00"/>';
+    // 无数据提示
+    if(sessions.length===0){
+      html+='<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="middle" font-size="4" fill="#9c8450">暂无今日学习时段</text>';
+      svg.innerHTML=html;
+      return;
+    }
+    // 绘制每个session的弧段（按起止时间），跨中午自动分段
+    sessions.forEach(function(s){
+      var d=new Date(s.ts||Date.now());
+      var startMin=d.getHours()*60+d.getMinutes()+d.getSeconds()/60+d.getMilliseconds()/60000;
+      var durMin=(s.sec||0)/60;
+      var endMin=startMin+durMin;
+      if(endMin>1440) endMin=1440;
+      if(endMin<=startMin) return;
+      var segs=splitDaySegments(startMin,endMin);
+      segs.forEach(function(seg){
+        var color=seg.pm?"#48b0a6":"#f4a261";
+        var path=annularArc(cx,cy,28,40,seg.start/1440,seg.end/1440);
+        var label=(s.label||"学习")+" "+fmtHM(seg.start)+"-"+fmtHM(seg.end);
+        html+='<path d="'+path+'" fill="'+color+'" stroke="#fffdf3" stroke-width="0.6" opacity="0.88">';
+        html+='<title>'+esc(label)+" "+fmtSec(Math.round((seg.end-seg.start)*60))+"</title>";
+        html+='</path>';
+      });
+    });
+    svg.innerHTML=html;
+  }
+  function fmtHM(min){
+    var h=Math.floor(min/60); var m=Math.floor(min%60);
+    return h+":"+("0"+m).slice(-2);
+  }
+
   // 首页
   function renderHome(){
     // 倒计时
@@ -1237,6 +1339,7 @@
       b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/></svg> 数据已积累 '+totalRecs+' 条，建议点右上角「导出」做好备份。';
       b.style.display="flex";
     } else b.style.display="none";
+    renderStudyClock();
   }
 
   function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
