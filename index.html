@@ -1267,12 +1267,16 @@
       return;
     }
     // 绘制每段学习弧（按起止时间，跨中午自动分段到内/外圈）
+    // 注意：session.ts 记录的是计时结束时刻，真实开始时间 = ts - sec
     sessions.forEach(function(s){
-      var d=new Date(s.ts||Date.now());
-      var startMin=d.getHours()*60+d.getMinutes()+d.getSeconds()/60+d.getMilliseconds()/60000;
-      var durMin=(s.sec||0)/60;
-      var endMin=startMin+durMin;
-      if(endMin>1440) endMin=1440;
+      var endMs=s.ts||Date.now();
+      var startMs=endMs-(s.sec||0)*1000;
+      // 跨天学习截断到今天 0:00（避免画到昨天时段）
+      if(todayStr(new Date(startMs))!==tkey) startMs=new Date(tkey+"T00:00:00").getTime();
+      var endD=new Date(endMs), startD=new Date(startMs);
+      var endMin=endD.getHours()*60+endD.getMinutes()+endD.getSeconds()/60;
+      var startMin=startD.getHours()*60+startD.getMinutes()+startD.getSeconds()/60;
+      if(startMin<0) startMin=0; if(endMin>1440) endMin=1440;
       if(endMin<=startMin) return;
       var segs=splitDaySegments(startMin,endMin);
       segs.forEach(function(seg){
