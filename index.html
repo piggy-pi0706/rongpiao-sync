@@ -286,10 +286,9 @@
   .tw-modes{display:flex;gap:8px;margin-bottom:10px;}
   .tw-mode{flex:1;text-align:center;padding:8px;border-radius:10px;background:var(--cy-soft);color:var(--cy-deep);font-weight:700;font-size:13px;cursor:pointer;border:2px solid transparent;}
   .tw-mode.active{background:#fff;border-color:var(--cy-main);}
-  .timer-modes{display:flex;gap:8px;margin-bottom:12px;}
-  .timer-mode{flex:1;text-align:center;padding:8px;border-radius:10px;background:var(--cy-soft);color:var(--cy-deep);font-weight:700;font-size:13px;cursor:pointer;border:2px solid transparent;transition:background .2s,border-color .2s;}
-  .timer-mode.active.prep{background:#fff8e1;border-color:#f3c43d;color:#8c6a0a;}
-  .timer-mode.active.thesis{background:#f1f8e9;border-color:#8bc34a;color:#3e6b22;}
+  .tw-head.prep{background:linear-gradient(135deg,#f3c43d,#d99b1c);color:#5b4612;}
+  .tw-head.thesis{background:linear-gradient(135deg,#8bc34a,#558b2f);color:#fff;}
+  .tw-head.thesis .x-btn{color:#fff;background:rgba(255,255,255,.28);}
   .tw-display{text-align:center;font-size:36px;font-weight:800;color:var(--cy-deep);font-variant-numeric:tabular-nums;margin:4px 0 8px;}
   .tw-label{width:100%;padding:8px 10px;border:1px solid var(--cy-mid);border-radius:10px;font-size:14px;margin-bottom:10px;color:var(--cy-text);}
   .tw-btns{display:flex;gap:8px;}
@@ -762,10 +761,6 @@
         <button type="button" class="x-btn" id="twClose" data-page-node-id="Q3K4riJHv7gzjwJ7FRwx6e">×</button>
       </div>
       <div class="tw-body" id="twBody" data-page-node-id="PtJPUuvOJxqOVBE2i1QXw1">
-        <div class="timer-modes" data-page-node-id="timerModesNode">
-          <div class="timer-mode active" data-mode="prep" id="timerModePrep" onclick="window.RP.switchTimerMode('prep')" data-page-node-id="timerModePrepNode">今日备课</div>
-          <div class="timer-mode" data-mode="thesis" id="timerModeThesis" onclick="window.RP.switchTimerMode('thesis')" data-page-node-id="timerModeThesisNode">今日论文</div>
-        </div>
         <div class="tw-modes" data-page-node-id="0QZ9netlKj5lzygjc4XXCk">
           <div class="tw-mode active" data-mode="up" id="modeUp" data-page-node-id="Fe8wYP5HdqP9IevBiJHAzS">正计时</div>
           <div class="tw-mode" data-mode="down" id="modeDown" data-page-node-id="mfXVJ8SO95Iy1LTMVrJCOK">30分倒计时</div>
@@ -2468,6 +2463,13 @@
     if(fab){ fab.classList.remove("prep","thesis"); fab.classList.add(activeTimerMode); }
     var badge=document.getElementById("timerBadge");
     if(badge){ badge.classList.remove("prep","thesis"); badge.classList.add(activeTimerMode); }
+    var head=document.querySelector(".tw-head");
+    if(head){
+      head.classList.remove("prep","thesis");
+      head.classList.add(activeTimerMode);
+      var title=head.querySelector("span");
+      if(title)title.textContent=activeTimerMode==="thesis"?"论文计时":"备考计时";
+    }
   }
   function syncTimerUI(){
     var cur=activeTimer();
@@ -2480,9 +2482,6 @@
     var mu=document.getElementById("modeUp"), md=document.getElementById("modeDown");
     if(mu)mu.classList.toggle("active",cur.mode==="up");
     if(md)md.classList.toggle("active",cur.mode==="down");
-    var mp=document.getElementById("timerModePrep"), mt=document.getElementById("timerModeThesis");
-    if(mp)mp.classList.toggle("active",activeTimerMode==="prep");
-    if(mt)mt.classList.toggle("active",activeTimerMode==="thesis");
     applyTimerModeClass();
   }
   function twRenderFor(t){
