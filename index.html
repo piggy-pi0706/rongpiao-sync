@@ -286,15 +286,23 @@
   .tw-modes{display:flex;gap:8px;margin-bottom:10px;}
   .tw-mode{flex:1;text-align:center;padding:8px;border-radius:10px;background:var(--cy-soft);color:var(--cy-deep);font-weight:700;font-size:13px;cursor:pointer;border:2px solid transparent;}
   .tw-mode.active{background:#fff;border-color:var(--cy-main);}
+  .timer-modes{display:flex;gap:8px;margin-bottom:12px;}
+  .timer-mode{flex:1;text-align:center;padding:8px;border-radius:10px;background:var(--cy-soft);color:var(--cy-deep);font-weight:700;font-size:13px;cursor:pointer;border:2px solid transparent;transition:background .2s,border-color .2s;}
+  .timer-mode.active.prep{background:#fff8e1;border-color:#f3c43d;color:#8c6a0a;}
+  .timer-mode.active.thesis{background:#f1f8e9;border-color:#8bc34a;color:#3e6b22;}
   .tw-display{text-align:center;font-size:36px;font-weight:800;color:var(--cy-deep);font-variant-numeric:tabular-nums;margin:4px 0 8px;}
   .tw-label{width:100%;padding:8px 10px;border:1px solid var(--cy-mid);border-radius:10px;font-size:14px;margin-bottom:10px;color:var(--cy-text);}
   .tw-btns{display:flex;gap:8px;}
   .tw-btns .btn{flex:1;justify-content:center;}
   /* 计时触发按钮（右下角常驻小圆钮） */
-  .timer-fab{position:fixed;right:18px;bottom:18px;z-index:45;width:52px;height:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#f3c43d,#d99b1c);box-shadow:0 6px 18px rgba(201,138,0,.42);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .timer-fab{position:fixed;right:18px;bottom:18px;z-index:45;width:52px;height:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#f3c43d,#d99b1c);box-shadow:0 6px 18px rgba(201,138,0,.42);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,box-shadow .25s;}
+  .timer-fab.prep{background:linear-gradient(135deg,#f3c43d,#d99b1c);box-shadow:0 6px 18px rgba(201,138,0,.42);}
+  .timer-fab.thesis{background:linear-gradient(135deg,#8bc34a,#558b2f);box-shadow:0 6px 18px rgba(85,139,47,.35);}
   .timer-fab svg{width:26px;height:26px;}
   .timer-fab.running{animation:tpulse 1.1s ease-in-out infinite;}
-  .timer-badge{position:fixed;right:18px;bottom:78px;z-index:45;background:#fff;border:1px solid var(--cy-deep);color:var(--cy-deep);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;padding:3px 9px;border-radius:13px;box-shadow:var(--shadow);display:none;pointer-events:none;}
+  .timer-badge{position:fixed;right:18px;bottom:78px;z-index:45;background:#fff;border:1px solid var(--cy-deep);color:var(--cy-deep);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;padding:3px 9px;border-radius:13px;box-shadow:var(--shadow);display:none;pointer-events:none;transition:border-color .25s,color .25s;}
+  .timer-badge.prep{border-color:#c98a00;color:#8c6a0a;}
+  .timer-badge.thesis{border-color:#558b2f;color:#3e6b22;}
   @keyframes tpulse{0%{box-shadow:0 6px 18px rgba(201,138,0,.42);}50%{box-shadow:0 6px 26px rgba(192,83,31,.7);}100%{box-shadow:0 6px 18px rgba(201,138,0,.42);}}
   /* 备份提示横幅 */
   .banner{background:#fcf7ea;border:1px solid #f1e6c4;color:#9c8038;padding:4px 10px;border-radius:8px;margin-bottom:10px;font-size:12px;line-height:1.4;display:flex;align-items:center;gap:5px;font-weight:400;}
@@ -512,12 +520,12 @@
               <div class="sc-num" id="totalSec" data-page-node-id="rQhxrxzhSTnF3NdI5LCyOH">0分</div>
               <div class="sc-sub" id="totalSessions" data-page-node-id="qic0CHKZbvOodwuxI7y9MW">共 0 次计时</div>
             </div>
-            <div class="stat-col prep" data-page-node-id="FJbWDphH3gNCtlqi7Zdt7z">
+            <div class="stat-col prep clickable" onclick="window.RP.switchTimerMode('prep');window.RP.openTimer()" title="切换到「备考」专属计时球并打开计时器" data-page-node-id="FJbWDphH3gNCtlqi7Zdt7z">
               <div class="sc-label" data-page-node-id="gyLnoX42Gp5bdd7LT1wlAI">今日备课</div>
               <div class="sc-num" id="prepSec" data-page-node-id="SShDrh6ZCZsHpkMG5wm0AQ">0分</div>
               <div class="sc-sub" id="prepSessions" data-page-node-id="cJzwA5VW4RfMNeVXJqidK0">今日其余计时</div>
             </div>
-            <div class="stat-col thesis" data-page-node-id="2NokczKT4IQx9oHYTEF3Jq">
+            <div class="stat-col thesis clickable" onclick="window.RP.switchTimerMode('thesis');window.RP.openTimer()" title="切换到「论文」专属计时球并打开计时器" data-page-node-id="2NokczKT4IQx9oHYTEF3Jq">
               <div class="sc-label" data-page-node-id="oEDKecZtHJ1Mi1xCEo2Oql">今日论文</div>
               <div class="sc-num" id="thesisSec" data-page-node-id="pCWXTje7zWEwGUbCBkwPK3">0分</div>
               <div class="sc-sub" id="thesisSessions" data-page-node-id="9G6tjEdbLQ6OyHFkrt0LJb">今日备注含「论文」</div>
@@ -754,6 +762,10 @@
         <button type="button" class="x-btn" id="twClose" data-page-node-id="Q3K4riJHv7gzjwJ7FRwx6e">×</button>
       </div>
       <div class="tw-body" id="twBody" data-page-node-id="PtJPUuvOJxqOVBE2i1QXw1">
+        <div class="timer-modes" data-page-node-id="timerModesNode">
+          <div class="timer-mode active" data-mode="prep" id="timerModePrep" onclick="window.RP.switchTimerMode('prep')" data-page-node-id="timerModePrepNode">今日备课</div>
+          <div class="timer-mode" data-mode="thesis" id="timerModeThesis" onclick="window.RP.switchTimerMode('thesis')" data-page-node-id="timerModeThesisNode">今日论文</div>
+        </div>
         <div class="tw-modes" data-page-node-id="0QZ9netlKj5lzygjc4XXCk">
           <div class="tw-mode active" data-mode="up" id="modeUp" data-page-node-id="Fe8wYP5HdqP9IevBiJHAzS">正计时</div>
           <div class="tw-mode" data-mode="down" id="modeDown" data-page-node-id="mfXVJ8SO95Iy1LTMVrJCOK">30分倒计时</div>
@@ -1738,7 +1750,7 @@
           var recDur=Math.floor((Date.now()-sRecStart)/1000);
           item.recs.push({id:rid,name:name,duration:recDur,createdAt:Date.now(),transcript:(sRecFinal||""),judge:null,kind:"video"});
           // 视频作答时长计入学习总时长
-          recordTimer(recDur, "结构化作答："+item.type, null);
+          recordTimer(recDur, "结构化作答："+item.type, null, "prep");
           if(sRecSR){ try{ sRecSR.stop(); }catch(_){} sRecSR=null; }
           save();renderStruct();renderHome();
           if(!ok)alert("视频已记录，但媒体库(IndexedDB)写入异常，建议尽快导出备份。");
@@ -2008,7 +2020,7 @@
         var sizeMB=blob.size/1048576;
         var id="v"+Date.now();
         var nm=(nameEl.value&&nameEl.value.trim())||(ctx.textId?(ctx.title+" 试讲"):("试讲"+(S.videos.length+1)));
-        if(ctx.overlap||timer.running){
+        if(ctx.overlap||anyTimerRunning()){
           // 录制时段与主计时重叠，该时段已被计时覆盖，避免重复计入总学习时长
           if(dur>0)alert("本次录制与主计时时段重叠，时长已计入主计时，未重复加入总时长。");
         }else{
@@ -2025,7 +2037,7 @@
       vRec.start(5000); // 每 5 秒落一次数据块，稳定支持十几分钟长录制
       vRecStart=Date.now();
       timerEl.textContent=fmtSec(0);
-      vTimer=setInterval(function(){ timerEl.textContent=fmtSec((Date.now()-vRecStart)/1000); if(timer.running)ctx.overlap=true; },500);
+      vTimer=setInterval(function(){ timerEl.textContent=fmtSec((Date.now()-vRecStart)/1000); if(anyTimerRunning())ctx.overlap=true; },500);
       // 录像时同步启动语音转写（与结构化录音同机制；不支持则降级为手动输入）
       vSRFinal=""; vSR=null;
       var VSR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -2410,17 +2422,22 @@
     if(fill)fill.style.width="0%"; if(knob)knob.style.left="0%"; if(buf)buf.style.width="0%"; if(time)time.textContent="0:00 / 0:00";
   }
 
-  // 计时器（持久化：误点切换页面/刷新/切后台都不会丢失，只有“重置”才清零）
+  // 计时器（双模式：备考 prep / 论文 thesis，各自独立计时与状态，切换不丢）
   var TKEY="wb_rongpiao_timer";
-  var timer={mode:"up",running:false,startTs:0,base:0,id:null,pendingTextId:null};
+  var timerPrep={mode:"up",running:false,startTs:0,base:0,id:null,pendingTextId:null};
+  var timerThesis={mode:"up",running:false,startTs:0,base:0,id:null,pendingTextId:null};
+  var activeTimerMode="prep"; // 当前展示/操作的计时球模式（prep=今日备课 / thesis=今日论文）
+  function activeTimer(){ return activeTimerMode==="thesis"?timerThesis:timerPrep; }
+  function anyTimerRunning(){ return timerPrep.running||timerThesis.running; }
   var DOWN_TOTAL=30*60;
   function persistTimer(){
     try{
-      if(timer.running||timer.base>0){
-        localStorage.setItem(TKEY,JSON.stringify({mode:timer.mode,running:timer.running,startTs:timer.startTs,base:timer.base,pendingTextId:timer.pendingTextId}));
-      } else {
-        localStorage.removeItem(TKEY);
-      }
+      var dump={
+        prep:{mode:timerPrep.mode,running:timerPrep.running,startTs:timerPrep.startTs,base:timerPrep.base,pendingTextId:timerPrep.pendingTextId},
+        thesis:{mode:timerThesis.mode,running:timerThesis.running,startTs:timerThesis.startTs,base:timerThesis.base,pendingTextId:timerThesis.pendingTextId},
+        active:activeTimerMode
+      };
+      localStorage.setItem(TKEY,JSON.stringify(dump));
     }catch(e){}
   }
   function loadTimer(){
@@ -2428,75 +2445,98 @@
       var raw=localStorage.getItem(TKEY);
       if(!raw)return;
       var o=JSON.parse(raw);
-      timer.mode=o.mode||"up";
-      timer.base=o.base||0;
-      timer.pendingTextId=o.pendingTextId||null;
-      if(o.running){ timer.running=true; timer.startTs=o.startTs||Date.now(); timer.id=setInterval(twRender,250); }
-      else { timer.running=false; }
-      if(timer.pendingTextId){
-        var t=(S.texts||[]).find(function(x){return x.id===timer.pendingTextId;});
+      if(o.prep){
+        timerPrep.mode=o.prep.mode||"up"; timerPrep.base=o.prep.base||0; timerPrep.pendingTextId=o.prep.pendingTextId||null;
+        if(o.prep.running){ timerPrep.running=true; timerPrep.startTs=o.prep.startTs||Date.now(); timerPrep.id=setInterval(function(){twRenderFor(timerPrep);},250); }
+      }
+      if(o.thesis){
+        timerThesis.mode=o.thesis.mode||"up"; timerThesis.base=o.thesis.base||0; timerThesis.pendingTextId=o.thesis.pendingTextId||null;
+        if(o.thesis.running){ timerThesis.running=true; timerThesis.startTs=o.thesis.startTs||Date.now(); timerThesis.id=setInterval(function(){twRenderFor(timerThesis);},250); }
+      }
+      activeTimerMode=o.active||"prep";
+      var at=activeTimer();
+      if(at.pendingTextId){
+        var t=(S.texts||[]).find(function(x){return x.id===at.pendingTextId;});
         if(t&&document.getElementById("twLabel"))document.getElementById("twLabel").value=t.title;
       }
+      applyTimerModeClass();
       syncTimerUI();
     }catch(e){}
   }
-  function syncTimerUI(){
+  function applyTimerModeClass(){
     var fab=document.getElementById("timerFab");
-    if(fab)fab.classList.toggle("running",timer.running);
-    var btn=document.getElementById("twStart");
-    if(btn)btn.textContent=timer.running?"暂停":(timer.base>0?"继续":"开始");
+    if(fab){ fab.classList.remove("prep","thesis"); fab.classList.add(activeTimerMode); }
     var badge=document.getElementById("timerBadge");
-    if(badge)badge.style.display=timer.running?"block":"none";
-    var mu=document.getElementById("modeUp"), md=document.getElementById("modeDown");
-    if(mu)mu.classList.toggle("active",timer.mode==="up");
-    if(md)md.classList.toggle("active",timer.mode==="down");
+    if(badge){ badge.classList.remove("prep","thesis"); badge.classList.add(activeTimerMode); }
   }
-  function twRender(){
-    var disp=document.getElementById("twDisplay");
-    if(!disp)return;
-    var now=timer.running?Date.now():0;
-    var elapsed=timer.base+(timer.running?(now-timer.startTs):0)/1000;
-    if(timer.mode==="up"){ disp.textContent=fmtClock(elapsed); }
-    else{
+  function syncTimerUI(){
+    var cur=activeTimer();
+    var fab=document.getElementById("timerFab");
+    if(fab)fab.classList.toggle("running",cur.running);
+    var btn=document.getElementById("twStart");
+    if(btn)btn.textContent=cur.running?"暂停":(cur.base>0?"继续":"开始");
+    var badge=document.getElementById("timerBadge");
+    if(badge){ badge.style.display=cur.running?"block":"none"; if(cur.running)badge.textContent=fmtClock(cur.base); }
+    var mu=document.getElementById("modeUp"), md=document.getElementById("modeDown");
+    if(mu)mu.classList.toggle("active",cur.mode==="up");
+    if(md)md.classList.toggle("active",cur.mode==="down");
+    var mp=document.getElementById("timerModePrep"), mt=document.getElementById("timerModeThesis");
+    if(mp)mp.classList.toggle("active",activeTimerMode==="prep");
+    if(mt)mt.classList.toggle("active",activeTimerMode==="thesis");
+    applyTimerModeClass();
+  }
+  function twRenderFor(t){
+    var cur=activeTimer();
+    var isActive=(t===cur);
+    var now=t.running?Date.now():0;
+    var elapsed=t.base+(t.running?(now-t.startTs):0)/1000;
+    if(t.mode==="down"&&t.running){
       var rem=DOWN_TOTAL-elapsed;
       if(rem<=0){
-        disp.textContent="00:00";
-        if(timer.running){
-          timer.running=false;clearInterval(timer.id);
-          recordTimer(DOWN_TOTAL);
-          resetTimer();
-          renderHome();
-          playChime();
-          alert("⏰ 30分钟到！已记录本次专注。");
-        }
+        t.running=false;clearInterval(t.id);
+        var fm=(t===timerThesis)?"thesis":"prep";
+        recordTimer(DOWN_TOTAL,"30分钟倒计时专注",null,fm);
+        if(isActive){ resetTimer(); }
+        else { t.base=0; t.pendingTextId=null; persistTimer(); }
+        renderHome(); playChime();
+        if(isActive)alert("⏰ 30分钟到！已记录本次专注。");
+        return;
       }
-      else disp.textContent=fmtClock(rem);
     }
+    if(!isActive){ var fab=document.getElementById("timerFab"); if(fab)fab.classList.toggle("running",cur.running); return; }
+    var disp=document.getElementById("twDisplay");
+    if(!disp)return;
+    disp.textContent=(t.mode==="up")?fmtClock(elapsed):fmtClock(DOWN_TOTAL-elapsed);
     var badge=document.getElementById("timerBadge");
-    if(badge&&timer.running)badge.textContent=fmtClock(elapsed);
+    if(badge){ badge.textContent=fmtClock(elapsed); badge.style.display=t.running?"block":"none"; }
     var fab=document.getElementById("timerFab");
-    if(fab)fab.classList.toggle("running",timer.running);
+    if(fab)fab.classList.toggle("running",t.running);
   }
+  function twRender(){ twRenderFor(activeTimer()); }
   function startTimer(){
-    if(timer.running)return;
+    var t=activeTimer();
+    if(t.running)return;
     getAudio(); // 借用户手势解锁音频，便于 30 分钟到时播放提示音
-    timer.running=true;timer.startTs=Date.now();
-    timer.id=setInterval(twRender,250);
+    t.running=true;t.startTs=Date.now();
+    t.id=setInterval(function(){twRenderFor(t);},250);
     syncTimerUI(); persistTimer();
   }
   function pauseTimer(){
-    if(!timer.running)return;
-    timer.base+= (Date.now()-timer.startTs)/1000;
-    timer.running=false;clearInterval(timer.id);
+    var t=activeTimer();
+    if(!t.running)return;
+    t.base+= (Date.now()-t.startTs)/1000;
+    t.running=false;clearInterval(t.id);
     syncTimerUI(); persistTimer();
   }
   function resetTimer(){
-    timer.running=false;clearInterval(timer.id);timer.base=0;timer.pendingTextId=null;
+    var t=activeTimer();
+    t.running=false;clearInterval(t.id);t.base=0;t.pendingTextId=null;
     syncTimerUI(); persistTimer(); twRender(); // 归零后立即刷新显示，否则数字会停留在旧值
   }
   function stopTimer(silent){
-    if(timer.running){ timer.base+=(Date.now()-timer.startTs)/1000; timer.running=false; clearInterval(timer.id); }
-    var elapsed=timer.base;
+    var t=activeTimer();
+    if(t.running){ t.base+=(Date.now()-t.startTs)/1000; t.running=false; clearInterval(t.id); }
+    var elapsed=t.base;
     if(elapsed<1){ resetTimer(); if(!silent)alert("计时不足1秒，未记录。"); document.getElementById("twStart").textContent="开始"; return; }
     recordTimer(elapsed);
     resetTimer();
@@ -2504,14 +2544,18 @@
     if(!silent)alert("已记录 "+fmtSec(elapsed)+" 到学习总时长。");
     renderHome();
   }
-  function recordTimer(sec,label,textId){
+  function recordTimer(sec,label,textId,forceMode){
     sec=Math.floor(sec);
     S.study.totalSec+=sec;
     var k=todayStr();
     S.study.daily[k]=(S.study.daily[k]||0)+sec;
-    var tid=textId||timer.pendingTextId||null;
-    S.study.sessions.push({id:"se"+Date.now()+Math.floor(Math.random()*9000+1000),ts:Date.now(),sec:sec,label:label||(document.getElementById("twLabel")?document.getElementById("twLabel").value:"专注学习"),textId:tid});
-    timer.pendingTextId=null;
+    var m=forceMode||activeTimerMode;
+    var tid=textId||((m===activeTimerMode)?activeTimer().pendingTextId:null);
+    if(tid===undefined)tid=null;
+    var lbl=label||(document.getElementById("twLabel")?document.getElementById("twLabel").value:"专注学习");
+    lbl=(m==="thesis"?"【论文】":"【备课】")+lbl;
+    S.study.sessions.push({id:"se"+Date.now()+Math.floor(Math.random()*9000+1000),ts:Date.now(),sec:sec,label:lbl,textId:tid});
+    if(m===activeTimerMode)activeTimer().pendingTextId=null;
     save();
   }
   function openTimer(){
@@ -2524,18 +2568,34 @@
   }
   function startTimerFor(textId){
     var t=(S.texts||[]).find(function(x){return x.id===textId;});
-    timer.pendingTextId=textId||null;
+    activeTimer().pendingTextId=textId||null;
     if(document.getElementById("twLabel"))document.getElementById("twLabel").value=t?t.title:(textId||"");
-    if(!timer.running){ timer.mode="up"; startTimer(); }
+    if(!activeTimer().running){ activeTimer().mode="up"; startTimer(); }
     openTimer();
   }
+  function switchTimerMode(m){
+    if(!m||(m!=="prep"&&m!=="thesis"))return;
+    activeTimerMode=m;
+    var at=activeTimer();
+    if(at.pendingTextId){
+      var t=(S.texts||[]).find(function(x){return x.id===at.pendingTextId;});
+      if(t&&document.getElementById("twLabel"))document.getElementById("twLabel").value=t.title;
+    } else if(document.getElementById("twLabel")){
+      document.getElementById("twLabel").value="";
+    }
+    applyTimerModeClass();
+    syncTimerUI();
+    twRender();
+    persistTimer();
+  }
   function setMode(m){
-    if(timer.running){ alert("计时进行中，请先点“暂停”再切换模式，避免丢失已计时间。"); return; }
-    timer.mode=m;
+    var t=activeTimer();
+    if(t.running){ alert("计时进行中，请先点“暂停”再切换模式，避免丢失已计时间。"); return; }
+    t.mode=m;
     var mu=document.getElementById("modeUp"), md=document.getElementById("modeDown");
     if(mu)mu.classList.toggle("active",m==="up");
     if(md)md.classList.toggle("active",m==="down");
-    if(m==="down"&&timer.base>DOWN_TOTAL)timer.base=0;
+    if(m==="down"&&t.base>DOWN_TOTAL)t.base=0;
     resetTimer();
   }
   // 计时基于绝对时间戳(timer.startTs)，切到别的 App 或后台时持续累计，回来也准确，无需暂停
@@ -2704,7 +2764,7 @@
     // 新闻刷新
     document.getElementById("btnNewsRefresh").onclick=refreshNews;
     // 计时器
-    document.getElementById("twStart").onclick=function(){ if(timer.running)pauseTimer(); else startTimer(); };
+    document.getElementById("twStart").onclick=function(){ if(activeTimer().running)pauseTimer(); else startTimer(); };
     document.getElementById("twStop").onclick=function(){stopTimer(false);};
     document.getElementById("twReset").onclick=resetTimer;
     document.getElementById("modeUp").onclick=function(){setMode("up");};
@@ -2716,7 +2776,7 @@
 
   // 暴露
   window.RP={
-    toggleDone:toggleDone,removeText:removeText,startTimerFor:startTimerFor,openTimer:openTimer,closeTimer:closeTimer,
+    toggleDone:toggleDone,removeText:removeText,startTimerFor:startTimerFor,openTimer:openTimer,closeTimer:closeTimer,switchTimerMode:switchTimerMode,
     toggleAns:toggleAns,delIntro:delIntro,renameIntro:renameIntro,delVid:delVid,vidDownload:vidDownload,
     delStruct:delStruct,addFromBank:addFromBank,randomBank:randomBank,openBank:openBank,closeBank:closeBank,
     toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,saveStructReview:saveStructReview,filterStructByReview:filterStructByReview,clearStructReviewFilter:clearStructReviewFilter,renderStructReviewSummary:renderStructReviewSummary,
