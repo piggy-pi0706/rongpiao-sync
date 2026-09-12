@@ -406,7 +406,7 @@
   .cal-mh{font-size:12px;font-weight:700;color:var(--cy-deep);margin-bottom:5px;text-align:center;}
   .cal-wd{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:9px;color:var(--cy-sub);text-align:center;margin-bottom:3px;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-  .cal-cell{width:16px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#7a6a3a;}
+  .cal-cell{width:16px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#7a6a3a;position:relative;}
   .cal-cell.empty{background:transparent;}
   .cal-cell.lvl0{background:#f1ecd9;}
   .cal-cell.lvl1{background:#f9eec0;}
@@ -416,6 +416,8 @@
   .cal-cell.lvl5{background:#e0a522;color:#fff;}
   .cal-cell.lvl6{background:#cf8a1a;color:#fff;}
   .cal-cell.lvl7{background:#b5651d;color:#fff;}
+  .cal-cell.lvl8{background:#8c4510;color:#fff;}
+  .cal-flower{position:absolute;top:-2px;right:-2px;width:11px;height:11px;line-height:0;pointer-events:none;}
   .cal-cell{cursor:pointer;transition:transform .08s;}
   .cal-cell:hover{outline:1px solid var(--cy-main);}
   .cal-cell.sel{outline:2px solid var(--cy-deep);}
@@ -559,7 +561,7 @@
 
         <div class="card" data-page-node-id="m9cS2zFkZP2QVMG03fzEcq">
           <h3 data-page-node-id="wTbJgf7dez0q7516u8tSyE"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="7IGGDvuH91MooBW9wOBqfF"><rect x="3" y="4" width="18" height="18" rx="2" data-page-node-id="MMKtg0ga7s7gTw0FdCIXYj"/><path d="M16 2v4M8 2v4M3 10h18" data-page-node-id="O2OBeRCYqugdEQZzk4daGh"/></svg>学习日历</h3>
-          <div style="font-size:12px;color:var(--cy-sub);margin-bottom:8px;" data-page-node-id="RatPlhLt0W8DjNORimgmMQ">从 2026年8月 起每日学习时长热力图（颜色越深＝当天学得越久，满 5 小时为最深色）</div>
+          <div style="font-size:12px;color:var(--cy-sub);margin-bottom:8px;" data-page-node-id="RatPlhLt0W8DjNORimgmMQ">从 2026年8月 起每日学习时长热力图（颜色越深＝当天学得越久，满 6 小时为最深色；满 8 小时额外显示花朵标记）</div>
           <div class="cal-wrap" id="calView" data-page-node-id="50iNsnTcTF2x5VHGJcdhMq"></div>
           <div id="calSel" class="cal-sel" style="display:none;" data-page-node-id="XrCuioOHrD4t2Vpd5KuLty"></div>
           <div class="cal-legend" style="margin-top:10px;font-size:12px;color:var(--cy-sub);" data-page-node-id="97KBDBOPB8hnUx3FipokvJ">
@@ -572,7 +574,10 @@
             <span class="cal-cell lvl5" data-page-node-id="XaUiVqFnbDBhIaeIT5wx2O"></span>
             <span class="cal-cell lvl6" data-page-node-id="j1qlIDJCcTbITLpsZfhnQT"></span>
             <span class="cal-cell lvl7" data-page-node-id="0aHDHFJE2XW0TjKZFHttxc"></span>
-            <span data-page-node-id="Ohgu9Krsr0ukctr8jyTqw4">多（≥5h）</span>
+            <span class="cal-cell lvl8" data-page-node-id="lvl8legend"></span>
+            <span data-page-node-id="Ohgu9Krsr0ukctr8jyTqw4">多（≥6h）</span>
+            <span class="cal-flower" data-page-node-id="flowerlegend"><svg viewBox="0 0 24 24" width="11" height="11"><g fill="#fff"><circle cx="12" cy="7" r="4.2"/><circle cx="7" cy="12" r="4.2"/><circle cx="17" cy="12" r="4.2"/><circle cx="9" cy="17.5" r="4.2"/><circle cx="15" cy="17.5" r="4.2"/></g><circle cx="12" cy="12" r="3" fill="#ffd54f"/></svg></span>
+            <span data-page-node-id="flowerlegendtext">满8h</span>
           </div>
         </div>
       </div>
@@ -1421,8 +1426,9 @@
         var key=y+"-"+("0"+(mo+1)).slice(-2)+"-"+("0"+d).slice(-2);
         var sec=S.study.daily[key]||0;
         var mins=Math.ceil(sec/60);
-        var lvl=mins===0?0:(mins<=30?1:(mins<=60?2:(mins<=120?3:(mins<=180?4:(mins<=240?5:(mins<=300?6:7))))));
-        cells+='<div class="cal-cell lvl'+lvl+'" title="'+key+'：'+(mins>0?mins+"分钟":"未学习")+'" data-key="'+key+'" onclick="window.RP.showDay(\''+key+'\')"><span>'+d+'</span></div>';
+        var lvl=mins===0?0:(mins<=30?1:(mins<=60?2:(mins<=120?3:(mins<=180?4:(mins<=240?5:(mins<=300?6:(mins<=360?7:8)))))));
+        var flower = mins>=480 ? '<span class="cal-flower"><svg viewBox="0 0 24 24" width="11" height="11"><g fill="#fff"><circle cx="12" cy="7" r="4.2"/><circle cx="7" cy="12" r="4.2"/><circle cx="17" cy="12" r="4.2"/><circle cx="9" cy="17.5" r="4.2"/><circle cx="15" cy="17.5" r="4.2"/></g><circle cx="12" cy="12" r="3" fill="#ffd54f"/></svg></span>' : '';
+        cells+='<div class="cal-cell lvl'+lvl+'" title="'+key+'：'+(mins>0?mins+"分钟":"未学习")+(mins>=480?"（满8小时·花朵标记）":"")+'" data-key="'+key+'" onclick="window.RP.showDay(\''+key+'\')"><span>'+d+'</span>'+flower+'</div>';
       }
       html+='<div class="cal-month"><div class="cal-mh">'+y+'年'+(mo+1)+'月</div>'+
         '<div class="cal-wd">'+wd.map(function(x){return "<span>"+x+"</span>";}).join("")+'</div>'+
