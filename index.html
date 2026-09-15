@@ -779,7 +779,7 @@
       <div class="tw-body" id="twBody" data-page-node-id="PtJPUuvOJxqOVBE2i1QXw1">
         <div class="tw-modes" data-page-node-id="0QZ9netlKj5lzygjc4XXCk">
           <div class="tw-mode active" data-mode="up" id="modeUp" data-page-node-id="Fe8wYP5HdqP9IevBiJHAzS">正计时</div>
-          <div class="tw-mode" data-mode="down" id="modeDown" data-page-node-id="mfXVJ8SO95Iy1LTMVrJCOK">30分倒计时</div>
+          <div class="tw-mode" data-mode="down" id="modeDown" data-page-node-id="mfXVJ8SO95Iy1LTMVrJCOK">40分倒计时</div>
         </div>
         <div class="tw-display" id="twDisplay" data-page-node-id="wL0lI1bG4k0WfeitTaDuZy">00:00</div>
         <input type="text" class="tw-label" id="twLabel" placeholder="在学什么？如：备课《观潮》" data-page-node-id="FL4RQgNjFeb2Gle9yNTY24">
@@ -2477,7 +2477,7 @@
   var activeTimerMode="prep"; // 当前展示/操作的计时球模式（prep=今日备课 / thesis=今日论文）
   function activeTimer(){ return activeTimerMode==="thesis"?timerThesis:timerPrep; }
   function anyTimerRunning(){ return timerPrep.running||timerThesis.running; }
-  var DOWN_TOTAL=30*60;
+  var DOWN_TOTAL=40*60;
   function persistTimer(){
     try{
       var dump={
@@ -2547,11 +2547,11 @@
       if(rem<=0){
         t.running=false;clearInterval(t.id);
         var fm=(t===timerThesis)?"thesis":"prep";
-        recordTimer(DOWN_TOTAL,"30分钟倒计时专注",null,fm);
+        recordTimer(DOWN_TOTAL,"40分钟倒计时专注",null,fm);
         if(isActive){ resetTimer(); }
         else { t.base=0; t.pendingTextId=null; persistTimer(); }
         renderHome(); playChime();
-        if(isActive)alert("⏰ 30分钟到！已记录本次专注。");
+        if(isActive)alert("⏰ 40分钟到！已记录本次专注。");
         return;
       }
     }
@@ -2651,7 +2651,7 @@
     resetTimer();
   }
   // 计时基于绝对时间戳(timer.startTs)，切到别的 App 或后台时持续累计，回来也准确，无需暂停
-  // 柔和提示音（30分钟到）：正弦双音，缓入缓出，不刺耳
+  // 柔和提示音（40分钟到）：正弦双音，缓入缓出，不刺耳
   var audioCtx=null;
   function getAudio(){
     try{
