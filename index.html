@@ -143,7 +143,7 @@
   #studyClock{width:220px;height:220px;}
   .clock-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:700;color:var(--cy-sub);background:#fffdf3;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(201,138,0,.12);}
   .clock-legend{display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--cy-text);min-width:110px;}
-  .clock-legend .leg{display:flex;align-items:center;gap:6px;}
+  .clock-legend .leg{display:flex;align-items:center;gap:6px;cursor:help;}
   .clock-legend .leg i{width:12px;height:12px;border-radius:50%;display:inline-block;}
   .clock-legend .am i{background:#f4a261;}
   .clock-legend .pm i{background:#48b0a6;}
@@ -548,8 +548,8 @@
             <div class="clock-wrap" data-page-node-id="DH93W9nxBimg7Ues9wtlbD">
               <svg id="studyClock" viewBox="0 0 100 100" data-page-node-id="zfp1gGfptapPBdZEnYb7OP"></svg>
               <div class="clock-legend" data-page-node-id="MtONAg1AAvjA5B10wK88rj">
-                <span class="leg am" data-page-node-id="AuNgRrDtHRLF65vomE2nJK"><i data-page-node-id="NCLYEjei8bEhMThrgK7iPr"></i>上午（内圈）</span>
-                <span class="leg pm" data-page-node-id="tZoRcE2MSIkiOYccKzgt8p"><i data-page-node-id="gFMMDJq8JNYejHae4266OS"></i>下午（外圈）</span>
+                <span class="leg am" id="clockLegAm" data-page-node-id="AuNgRrDtHRLF65vomE2nJK"><i data-page-node-id="NCLYEjei8bEhMThrgK7iPr"></i>上午（内圈）</span>
+                <span class="leg pm" id="clockLegPm" data-page-node-id="tZoRcE2MSIkiOYccKzgt8p"><i data-page-node-id="gFMMDJq8JNYejHae4266OS"></i>下午（外圈）</span>
               </div>
             </div>
             <div class="clock-tip" id="clockTip" data-page-node-id="3O5Y8fTP1bhmfAWbHjVpRX">钟表盘按今日每次计时的起止时间绘制，上午/下午用不同颜色区分。</div>
@@ -1284,6 +1284,25 @@
     if(dt)dt.textContent=dateLabel;
     var tip=document.getElementById("clockTip");
     if(tip)tip.textContent="钟表盘按"+fullLabel+"每次计时的起止时间绘制，上午/下午用不同颜色区分。";
+    // 图例悬停提示：汇总所选日期上午/下午各自的学习总时长
+    var amSec=0, pmSec=0;
+    sessions.forEach(function(s){
+      var endMs=s.ts||Date.now();
+      var startMs=endMs-(s.sec||0)*1000;
+      if(todayStr(new Date(startMs))!==tkey) startMs=new Date(tkey+"T00:00:00").getTime();
+      var endD=new Date(endMs), startD=new Date(startMs);
+      var endMin=endD.getHours()*60+endD.getMinutes()+endD.getSeconds()/60;
+      var startMin=startD.getHours()*60+startD.getMinutes()+startD.getSeconds()/60;
+      if(startMin<0) startMin=0; if(endMin>1440) endMin=1440;
+      if(endMin<=startMin) return;
+      splitDaySegments(startMin,endMin).forEach(function(seg){
+        var m=seg.amEnd-seg.amStart;
+        if(seg.pm) pmSec+=Math.round(m*60); else amSec+=Math.round(m*60);
+      });
+    });
+    var legAm=document.getElementById("clockLegAm"), legPm=document.getElementById("clockLegPm");
+    if(legAm)legAm.title=fullLabel+"上午共学习 "+fmtSec(amSec)+"（内圈橙色部分）";
+    if(legPm)legPm.title=fullLabel+"下午共学习 "+fmtSec(pmSec)+"（外圈青色部分）";
     // 两层 12 小时制：外圈(下午) 38~45，内圈(上午) 24~36，分隔 37，数字外缘 48
     var html="";
     // 底盘：外层圈 + 两层界
