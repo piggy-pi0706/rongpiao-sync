@@ -788,6 +788,9 @@
           <button class="btn" id="twStop" data-page-node-id="CjIl2fk9nfE7Bxi76sdiN5">记录</button>
           <button class="btn ghost" id="twReset" data-page-node-id="QfREWuF0y2cjLNMNGO1vFM">重置</button>
         </div>
+        <div style="margin-top:8px;text-align:center;">
+          <button class="btn ghost" id="twBackfill" onclick="window.RP.openBackfill()">＋ 补记往日时长</button>
+        </div>
       </div>
     </div>
   </div>
@@ -822,6 +825,48 @@
       <div class="modal-actions" data-page-node-id="ifqcyGOmkChzGnXLFoPBiH">
         <button class="btn ghost" id="modalCancel" data-page-node-id="hU9eFyIvSf6fZ2CvyPs5I7">取消</button>
         <button class="btn danger" id="modalOk" data-page-node-id="73ameFzje4pOq7SkqdNg1j">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模态：补记往日时长 -->
+  <div class="modal-mask" id="backfillMask" style="display:none;" onclick="if(event.target===this)window.RP.closeBackfill()">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-head">
+        <h3>补记往日学习时长</h3>
+        <button type="button" class="x-btn" onclick="window.RP.closeBackfill()">×</button>
+      </div>
+      <div style="padding:6px 4px 2px;">
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 0;">
+          <label style="width:60px;color:#9c8450;font-size:14px;flex:0 0 60px;">日期</label>
+          <input type="date" id="bfDate" style="flex:1;padding:8px 10px;border:1px solid #ead7a0;border-radius:10px;font-size:16px;box-sizing:border-box;">
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 0;">
+          <label style="width:60px;color:#9c8450;font-size:14px;flex:0 0 60px;">时长</label>
+          <input type="number" id="bfHours" min="0" max="24" value="2" style="width:72px;padding:8px 10px;border:1px solid #ead7a0;border-radius:10px;font-size:16px;box-sizing:border-box;"> <span style="font-size:14px;color:#9c8450;">时</span>
+          <input type="number" id="bfMins" min="0" max="59" value="30" style="width:72px;padding:8px 10px;border:1px solid #ead7a0;border-radius:10px;font-size:16px;box-sizing:border-box;"> <span style="font-size:14px;color:#9c8450;">分</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 0;">
+          <label style="width:60px;color:#9c8450;font-size:14px;flex:0 0 60px;">开始时间</label>
+          <input type="time" id="bfStart" value="21:00" style="width:120px;padding:8px 10px;border:1px solid #ead7a0;border-radius:10px;font-size:16px;box-sizing:border-box;">
+          <span style="font-size:12px;color:#9c8450;">（用于表盘上午/下午定位）</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 0;">
+          <label style="width:60px;color:#9c8450;font-size:14px;flex:0 0 60px;">类型</label>
+          <select id="bfMode" style="padding:8px 10px;border:1px solid #ead7a0;border-radius:10px;font-size:16px;box-sizing:border-box;">
+            <option value="prep">备课</option>
+            <option value="thesis">论文</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 0;">
+          <label style="width:60px;color:#9c8450;font-size:14px;flex:0 0 60px;">备注</label>
+          <input type="text" id="bfLabel" placeholder="如：晚上备考（可选）" style="flex:1;padding:8px 10px;border:1px solid #ead7a0;border-radius:10px;font-size:16px;box-sizing:border-box;">
+        </div>
+        <div id="bfErr" style="color:#c0392b;font-size:13px;margin:4px 0 2px;display:none;"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="window.RP.closeBackfill()">取消</button>
+        <button class="btn primary" onclick="window.RP.submitBackfill()">确认补记</button>
       </div>
     </div>
   </div>
@@ -2629,6 +2674,50 @@
     if(m===activeTimerMode)activeTimer().pendingTextId=null;
     save();
   }
+  // 补记往日学习时长（忘记计时时手动回填）
+  function openBackfill(){
+    var el=document.getElementById("bfDate");
+    if(el && !el.value){
+      var y=new Date(); y.setDate(y.getDate()-1); // 默认昨天
+      el.value=y.getFullYear()+"-"+("0"+(y.getMonth()+1)).slice(-2)+"-"+("0"+y.getDate()).slice(-2);
+    }
+    var m=document.getElementById("backfillMask"); if(m)m.style.display="flex";
+  }
+  function closeBackfill(){
+    var m=document.getElementById("backfillMask"); if(m)m.style.display="none";
+  }
+  function submitBackfill(){
+    var date=(document.getElementById("bfDate").value||"").trim();
+    var h=parseInt(document.getElementById("bfHours").value,10)||0;
+    var mi=parseInt(document.getElementById("bfMins").value,10)||0;
+    var mode=document.getElementById("bfMode").value;
+    var st=(document.getElementById("bfStart").value||"21:00").trim();
+    var note=(document.getElementById("bfLabel").value||"").trim();
+    var err=document.getElementById("bfErr");
+    if(err){ err.style.display="none"; err.textContent=""; }
+    if(!date){ if(err){err.style.display="block";err.textContent="请选择日期";} return; }
+    if(h===0&&mi===0){ if(err){err.style.display="block";err.textContent="请填写时长（时或分至少一项大于 0）";} return; }
+    if(h<0||h>24||mi<0||mi>59){ if(err){err.style.display="block";err.textContent="时长数值不合法";} return; }
+    var sec=h*3600+mi*60;
+    var sp=st.split(":"); var sh=parseInt(sp[0],10)||0, sm=parseInt(sp[1],10)||0;
+    var dp=date.split("-"); var yr=parseInt(dp[0],10), mo=parseInt(dp[1],10)-1, dy=parseInt(dp[2],10);
+    var startMs=new Date(yr,mo,dy,sh,sm,0).getTime();
+    var endMs=startMs+sec*1000;
+    if(!S.study)S.study={totalSec:0,daily:{},sessions:[]};
+    if(!S.study.daily)S.study.daily={};
+    if(!S.study.sessions)S.study.sessions=[];
+    S.study.daily[date]=(S.study.daily[date]||0)+sec;
+    S.study.totalSec=0; for(var k in S.study.daily){ S.study.totalSec+=S.study.daily[k]; } // 与同步合并逻辑一致重算
+    var lbl=note? note : "补记学习";
+    lbl=(mode==="thesis"?"【论文】":"【备课】")+lbl;
+    var endOfDay=new Date(yr,mo,dy,23,59,59).getTime();
+    var ts=endMs>endOfDay?endOfDay:endMs; // 跨午夜则截断到当天 23:59，保证日历/表盘归属所选日
+    S.study.sessions.push({id:"se"+Date.now()+Math.floor(Math.random()*9000+1000),ts:ts,sec:sec,label:lbl,textId:null});
+    save();
+    closeBackfill();
+    renderHome();
+    alert("已为 "+date+" 补记 "+fmtSec(sec)+"（"+(mode==="thesis"?"论文":"备课")+(note?" · "+note:"")+"）");
+  }
   function openTimer(){
     var ov=document.getElementById("timerOverlay");
     if(ov)ov.style.display="flex";
@@ -2853,7 +2942,8 @@
     toggleStructRec:toggleStructRec,delStructRec:delStructRec,renameStructRec:renameStructRec,saveStructReview:saveStructReview,filterStructByReview:filterStructByReview,clearStructReviewFilter:clearStructReviewFilter,renderStructReviewSummary:renderStructReviewSummary,
     transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
-    startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan,openTimeCollection:openTimeCollection,closeTimeCollection:closeTimeCollection,renderTimeCollection:renderTimeCollection
+    startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan,    openTimeCollection:openTimeCollection,closeTimeCollection:closeTimeCollection,renderTimeCollection:renderTimeCollection,
+    openBackfill:openBackfill,closeBackfill:closeBackfill,submitBackfill:submitBackfill
   };
 
   // 启动
