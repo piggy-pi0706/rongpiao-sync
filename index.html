@@ -169,6 +169,8 @@
   .tc-label{font-size:14px;color:var(--cy-text);line-height:1.4;word-break:break-word;}
   .tc-date{font-size:12px;color:var(--cy-sub);margin-top:2px;}
   .tc-sec{font-size:14px;font-weight:700;color:var(--cy-deep);white-space:nowrap;}
+  .tc-del{flex:none;width:26px;height:26px;border:none;background:transparent;border-radius:50%;color:#c9b78a;font-size:18px;line-height:1;cursor:pointer;transition:background .15s,color .15s;display:flex;align-items:center;justify-content:center;}
+  .tc-del:hover{background:#fbe2e2;color:#c0392b;}
   .tc-empty{padding:30px;text-align:center;color:var(--cy-sub);font-size:14px;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .todo-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--cy-soft);}
@@ -1280,6 +1282,7 @@
         '<span class="tc-dot '+(isThesis?"thesis":"prep")+'"></span>'+
         '<div class="tc-main"><div class="tc-label">'+esc(s.label||"专注学习")+'</div><div class="tc-date">'+ds+'</div></div>'+
         '<div class="tc-sec">'+fmtSec(s.sec)+'</div>'+
+        '<button type="button" class="tc-del" title="删除这条记录" onclick="window.RP.deleteSession(\''+s.id+'\')">×</button>'+
       '</div>';
     });
     list.innerHTML= rows || '<div class="tc-empty">暂无符合条件的计时记录。</div>';
@@ -2718,6 +2721,33 @@
     renderHome();
     alert("已为 "+date+" 补记 "+fmtSec(sec)+"（"+(mode==="thesis"?"论文":"备课")+(note?" · "+note:"")+"）");
   }
+  // 删除单条计时记录（误补/录错时手动移除），并据 sessions 重算当日与累计时长
+  function recomputeStudyTotals(){
+    var daily={};
+    (S.study.sessions||[]).forEach(function(s){
+      var dk=todayStr(new Date(s.ts||Date.now()));
+      daily[dk]=(daily[dk]||0)+(s.sec||0);
+    });
+    S.study.daily=daily;
+    var t=0; for(var k in daily){ t+=daily[k]; }
+    S.study.totalSec=t;
+  }
+  function deleteSession(id){
+    var items=S.study.sessions||[];
+    var idx=-1;
+    for(var i=0;i<items.length;i++){ if(items[i].id===id){ idx=i; break; } }
+    if(idx<0) return;
+    var s=items[idx];
+    var d=new Date(s.ts);
+    var ds=todayStr(d)+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+    if(!window.confirm("确定删除这条计时记录吗？\n\n"+esc(s.label||"专注学习")+"\n"+ds+" · "+fmtSec(s.sec)+"\n\n（删除后将从该日总时长与累计中扣除，不可撤销）")) return;
+    items.splice(idx,1);
+    recomputeStudyTotals();
+    save();
+    renderTimeCollection(tcFilter);
+    renderHome();
+    if(typeof renderStudyClock==="function") renderStudyClock();
+  }
   function openTimer(){
     var ov=document.getElementById("timerOverlay");
     if(ov)ov.style.display="flex";
@@ -2943,7 +2973,7 @@
     transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
     startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan,    openTimeCollection:openTimeCollection,closeTimeCollection:closeTimeCollection,renderTimeCollection:renderTimeCollection,
-    openBackfill:openBackfill,closeBackfill:closeBackfill,submitBackfill:submitBackfill
+    openBackfill:openBackfill,closeBackfill:closeBackfill,submitBackfill:submitBackfill,deleteSession:deleteSession,recomputeStudyTotals:recomputeStudyTotals
   };
 
   // 启动
