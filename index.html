@@ -172,6 +172,17 @@
   .tc-del{flex:none;width:26px;height:26px;border:none;background:transparent;border-radius:50%;color:#c9b78a;font-size:18px;line-height:1;cursor:pointer;transition:background .15s,color .15s;display:flex;align-items:center;justify-content:center;}
   .tc-del:hover{background:#fbe2e2;color:#c0392b;}
   .tc-empty{padding:30px;text-align:center;color:var(--cy-sub);font-size:14px;}
+  /* 每日计划 */
+  .plan-list{margin-top:6px;}
+  .plan-item{display:flex;align-items:flex-start;gap:10px;padding:8px 2px;border-bottom:1px dashed var(--cy-soft);}
+  .plan-item:last-child{border-bottom:none;}
+  .plan-check{width:20px;height:20px;flex:none;margin-top:1px;cursor:pointer;accent-color:#d99b1c;}
+  .plan-text{flex:1;font-size:14px;color:var(--cy-text);line-height:1.5;word-break:break-word;cursor:pointer;}
+  .plan-item.done .plan-text{text-decoration:line-through;color:#b9a97f;}
+  .plan-del{flex:none;width:26px;height:26px;border:none;background:transparent;border-radius:50%;color:#c9b78a;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .plan-del:hover{background:#fbe2e2;color:#c0392b;}
+  .plan-carry{margin-top:8px;font-size:12px;color:#b5740a;background:#fff3d6;border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .plan-empty{padding:14px 4px;font-size:13px;color:var(--cy-sub);}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .todo-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--cy-soft);}
   .todo-item:last-child{border-bottom:none;}
@@ -517,6 +528,17 @@
             <div class="label" data-page-node-id="X98fB6olrMmLc7OD60ZGzf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="l20y2Hulmdd81HemZLf6LF"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" data-page-node-id="nzGVyphsqlNBomfyQ3zpgh"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" data-page-node-id="nQBWJsp2lkA8q9EMmB2JuQ"/></svg>待学习课文</div>
             <div class="num" id="pendingNum" data-page-node-id="yyE5jyikMxtEV6z93vEdTN">0</div>
             <div class="sub" data-page-node-id="LnTxtTC8qEuqqq5wQAwQ2K">篇未学完</div>
+          </div>
+        </div>
+
+        <!-- 每日计划 -->
+        <div class="card" style="margin-top:16px;">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>每日计划<span style="font-size:12px;font-weight:400;color:var(--cy-sub);margin-left:8px;" id="planDateLabel"></span><span style="float:right;font-size:12px;font-weight:400;color:var(--cy-sub);" id="planProgress"></span></h3>
+          <div id="planList" class="plan-list"></div>
+          <div id="planCarry" class="plan-carry" style="display:none;"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <input type="text" id="planInput" placeholder="添加今日计划，如：精备《观潮》＋试讲一遍" style="flex:1;padding:9px 12px;border:1px solid #ead7a0;border-radius:10px;font-size:16px;box-sizing:border-box;">
+            <button class="btn primary" style="flex:none;" onclick="window.RP.addPlan()">＋ 添加</button>
           </div>
         </div>
 
@@ -1130,6 +1152,7 @@
     if(!S.struct)S.struct=DEFAULT_STRUCT.slice();
     if(!S.intro)S.intro=[];
     if(!S.videos)S.videos=[];
+    if(!S.plans)S.plans={};
     if(!S.newsUpdated)S.newsUpdated="2026-08-02";
     // 一次性合并 Tier1 必补缺口篇目（兼容已存 localStorage 的老用户；2026-08 核对）
     if(!S._t1merged){
@@ -1462,7 +1485,7 @@
     while((S.study.daily[todayStr(d3)]||0)>0){ streak++; d3.setDate(d3.getDate()-1); if(streak>1000)break; }
     document.getElementById("streak").textContent=streak;
     renderCalendar();
-    // 备份提示
+    renderTodayPlan();
     var totalRecs=S.study.sessions.length+S.texts.length;
     var b=document.getElementById("backupBanner");
     if(totalRecs>=30){
@@ -2749,6 +2772,81 @@
     renderHome();
     if(typeof renderStudyClock==="function") renderStudyClock();
   }
+
+  // ===== 每日计划（当天待办清单，S.plans={"YYYY-MM-DD":[{id,text,done}]}）=====
+  function planKey(d){ return todayStr(d||new Date()); }
+  function planDateLabel(){
+    var d=new Date();
+    var wd=["周日","周一","周二","周三","周四","周五","周六"][d.getDay()];
+    return (d.getMonth()+1)+"月"+d.getDate()+"日 "+wd;
+  }
+  function renderTodayPlan(){
+    var list=document.getElementById("planList"); if(!list)return;
+    if(!S.plans)S.plans={};
+    var tkey=planKey();
+    if(!S.plans[tkey])S.plans[tkey]=[];
+    var items=S.plans[tkey];
+    var lab=document.getElementById("planDateLabel");
+    if(lab)lab.textContent=planDateLabel();
+    var doneN=0; items.forEach(function(p){ if(p.done)doneN++; });
+    var pg=document.getElementById("planProgress");
+    if(pg)pg.textContent=items.length?("已完成 "+doneN+"/"+items.length):"";
+    var html="";
+    items.forEach(function(p){
+      html+='<div class="plan-item'+(p.done?" done":"")+'">'+
+        '<input type="checkbox" class="plan-check" '+(p.done?"checked":"")+' onclick="window.RP.togglePlan(\''+p.id+'\')">'+
+        '<span class="plan-text" onclick="window.RP.togglePlan(\''+p.id+'\')">'+esc(p.text)+'</span>'+
+        '<button type="button" class="plan-del" title="删除" onclick="window.RP.delPlan(\''+p.id+'\')">×</button>'+
+      '</div>';
+    });
+    if(!items.length) html='<div class="plan-empty">今天还没有计划，在下方添加一条吧（建议只写当天最要紧的几件事）。</div>';
+    list.innerHTML=html;
+    // 昨日未完成提示（可一键带入今天）
+    var carry=document.getElementById("planCarry");
+    if(carry){
+      var y=new Date(); y.setDate(y.getDate()-1);
+      var yArr=(S.plans||{})[planKey(y)]||[];
+      var yUn=0; yArr.forEach(function(x){ if(!x.done)yUn++; });
+      if(yUn>0){
+        carry.style.display="flex";
+        carry.innerHTML='<span>昨天还有 '+yUn+' 条未完成</span><button type="button" class="btn ghost" style="padding:3px 10px;font-size:12px;min-height:26px;" onclick="window.RP.carryPlans()">带入今天</button>';
+      } else carry.style.display="none";
+    }
+  }
+  function addPlan(){
+    var inp=document.getElementById("planInput"); if(!inp)return;
+    var t=(inp.value||"").trim();
+    if(!t){ inp.focus(); return; }
+    if(!S.plans)S.plans={};
+    var tkey=planKey();
+    if(!S.plans[tkey])S.plans[tkey]=[];
+    S.plans[tkey].push({id:"p"+Date.now()+Math.floor(Math.random()*9000+1000),text:t,done:false});
+    inp.value="";
+    save();
+    renderTodayPlan();
+  }
+  function togglePlan(id){
+    var arr=(S.plans||{})[planKey()]||[];
+    var x=null; arr.forEach(function(p){ if(p.id===id)x=p; });
+    if(x){ x.done=!x.done; save(); renderTodayPlan(); }
+  }
+  function delPlan(id){
+    var arr=(S.plans||{})[planKey()]||[];
+    var i=-1; arr.forEach(function(p,ix){ if(p.id===id)i=ix; });
+    if(i>=0){ arr.splice(i,1); save(); renderTodayPlan(); }
+  }
+  function carryPlans(){
+    var y=new Date(); y.setDate(y.getDate()-1);
+    var yArr=(S.plans||{})[planKey(y)]||[];
+    var tkey=planKey();
+    if(!S.plans)S.plans={};
+    if(!S.plans[tkey])S.plans[tkey]=[];
+    yArr.forEach(function(x){
+      if(!x.done) S.plans[tkey].push({id:"p"+Date.now()+Math.floor(Math.random()*9000+1000),text:x.text,done:false});
+    });
+    save();
+    renderTodayPlan();
+  }
   function openTimer(){
     var ov=document.getElementById("timerOverlay");
     if(ov)ov.style.display="flex";
@@ -2902,6 +3000,8 @@
     document.getElementById("btnClear").onclick=clearAll;
     document.getElementById("syncChip").onclick=syncNow;
     document.getElementById("targetDate").onchange=function(e){ S.profile.targetDate=e.target.value; save(); renderHome(); };
+    var pi=document.getElementById("planInput");
+    if(pi) pi.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); addPlan(); } });
     // 目录
     document.getElementById("btnAddText").onclick=addText;
     document.getElementById("btnResetTexts").onclick=resetTexts;
@@ -2974,7 +3074,8 @@
     transcribeRec:transcribeRec,saveTranscript:saveTranscript,setFam:setFam,setTextFam:setTextFam,
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
     startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan,    openTimeCollection:openTimeCollection,closeTimeCollection:closeTimeCollection,renderTimeCollection:renderTimeCollection,
-    openBackfill:openBackfill,closeBackfill:closeBackfill,submitBackfill:submitBackfill,deleteSession:deleteSession,recomputeStudyTotals:recomputeStudyTotals
+    openBackfill:openBackfill,closeBackfill:closeBackfill,submitBackfill:submitBackfill,deleteSession:deleteSession,recomputeStudyTotals:recomputeStudyTotals,
+    addPlan:addPlan,togglePlan:togglePlan,delPlan:delPlan,carryPlans:carryPlans,renderTodayPlan:renderTodayPlan
   };
 
   // 启动
