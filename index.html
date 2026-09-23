@@ -24,6 +24,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
+  html,body{overflow-x:clip;}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
     background:linear-gradient(180deg,#fffdf3 0%,#fdf4d8 100%);
@@ -68,7 +69,7 @@
   .btn.ghost{background:transparent;border:1px solid var(--cy-mid);}
   .btn.danger{background:#f6d3b0;color:#b5541f;}
   /* 布局 */
-  .layout{display:flex;min-height:calc(100vh - 58px);}
+  .layout{display:flex;min-height:calc(100vh - 58px);max-width:1280px;margin:0 auto;}
   .sidebar{
     width:212px;flex:0 0 212px;
     background:linear-gradient(180deg,#fdf3d4 0%,#fbeecb 100%);
@@ -89,7 +90,7 @@
   @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
   h2.page-title{display:flex;align-items:center;gap:9px;font-size:21px;margin:2px 0 14px;color:var(--cy-deep);}
   h2.page-title svg{width:24px;height:24px;}
-  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px;border:1px solid #fdf3d4;}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:15px 16px;margin-bottom:14px;border:1px solid #fdf3d4;}
   .card h3{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:7px;color:var(--cy-deep);}
   .card h3 svg{width:18px;height:18px;}
   /* 首页统计 */
@@ -131,7 +132,7 @@
   .stat-col.clickable:active{transform:translateY(0);}
   .stat-col.clickable .sc-num:after{content:"›";position:absolute;right:8px;top:10px;font-size:18px;opacity:.55;font-weight:700;}
   /* 学习时段钟表盘 */
-  .clock-card{background:var(--card);border:1px solid var(--cy-soft);border-radius:var(--radius);padding:14px 12px;margin-top:12px;box-shadow:var(--shadow);}
+  .clock-card{background:var(--card);border:1px solid var(--cy-soft);border-radius:var(--radius);padding:12px 10px;margin-top:10px;box-shadow:var(--shadow);}
   .clock-title{font-size:14px;font-weight:700;color:var(--cy-deep);display:flex;align-items:center;gap:6px;margin-bottom:6px;}
   .clock-title svg{width:16px;height:16px;}
   .clock-datebar{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:10px;}
