@@ -182,7 +182,6 @@
   .plan-item.done .plan-text{text-decoration:line-through;color:#b9a97f;}
   .plan-del{flex:none;width:26px;height:26px;border:none;background:transparent;border-radius:50%;color:#c9b78a;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .plan-del:hover{background:#fbe2e2;color:#c0392b;}
-  .plan-carry{margin-top:8px;font-size:12px;color:#b5740a;background:#fff3d6;border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .plan-empty{padding:14px 4px;font-size:13px;color:var(--cy-sub);}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .todo-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--cy-soft);}
@@ -534,11 +533,10 @@
 
         <!-- 每日计划 -->
         <div class="card" style="margin-top:16px;">
-          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>每日计划<span style="font-size:12px;font-weight:400;color:var(--cy-sub);margin-left:8px;" id="planDateLabel"></span><span style="float:right;font-size:12px;font-weight:400;color:var(--cy-sub);" id="planProgress"></span></h3>
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>每日任务<span style="font-size:12px;font-weight:400;color:var(--cy-sub);margin-left:8px;" id="planDateLabel"></span><span style="float:right;font-size:12px;font-weight:400;color:var(--cy-sub);" id="planProgress"></span></h3>
           <div id="planList" class="plan-list"></div>
-          <div id="planCarry" class="plan-carry" style="display:none;"></div>
           <div style="display:flex;gap:8px;margin-top:10px;">
-            <input type="text" id="planInput" placeholder="添加今日计划，如：精备《观潮》＋试讲一遍" style="flex:1;padding:9px 12px;border:1px solid #ead7a0;border-radius:10px;font-size:16px;box-sizing:border-box;">
+            <input type="text" id="planInput" placeholder="添加每日任务，如：精备《观潮》＋试讲一遍" style="flex:1;padding:9px 12px;border:1px solid #ead7a0;border-radius:10px;font-size:16px;box-sizing:border-box;">
             <button class="btn primary" style="flex:none;" onclick="window.RP.addPlan()">＋ 添加</button>
           </div>
         </div>
@@ -1153,7 +1151,26 @@
     if(!S.struct)S.struct=DEFAULT_STRUCT.slice();
     if(!S.intro)S.intro=[];
     if(!S.videos)S.videos=[];
-    if(!S.plans)S.plans={};
+    // 每日任务：固定清单模板（dailyTasks）+ 按天勾选状态（dailyDone）
+    if(!S.dailyTasks)S.dailyTasks=[];
+    if(!S.dailyDone)S.dailyDone={};
+    if(!S._planMigrated){
+      // 老用户曾用按日期的 plans，取最近一天有内容的作为固定清单模板
+      if(S.plans){
+        var pdays=Object.keys(S.plans).filter(function(k){return S.plans[k]&&S.plans[k].length;}).sort();
+        if(pdays.length){
+          var plast=S.plans[pdays[pdays.length-1]];
+          S.dailyTasks=plast.map(function(p){return {id:"p"+Date.now()+Math.floor(Math.random()*9000+1000),text:p.text};});
+        }
+        delete S.plans;
+      }
+      // 全新用户预置 4 条备考默认任务（可随时增删改）
+      if(!S.dailyTasks.length){
+        var defs=["背 30 个生字词","精备 1 篇课文并试讲一遍","写 2 小时论文","做 1 套结构化题"];
+        S.dailyTasks=defs.map(function(t){return {id:"p"+Date.now()+Math.floor(Math.random()*9000+1000),text:t};});
+      }
+      S._planMigrated=true; save();
+    }
     if(!S.newsUpdated)S.newsUpdated="2026-08-02";
     // 一次性合并 Tier1 必补缺口篇目（兼容已存 localStorage 的老用户；2026-08 核对）
     if(!S._t1merged){
@@ -2774,7 +2791,7 @@
     if(typeof renderStudyClock==="function") renderStudyClock();
   }
 
-  // ===== 每日计划（当天待办清单，S.plans={"YYYY-MM-DD":[{id,text,done}]}）=====
+  // ===== 每日任务（固定清单模板 dailyTasks=[{id,text}] + 按天勾选 dailyDone={"YYYY-MM-DD":{id:true}}）=====
   function planKey(d){ return todayStr(d||new Date()); }
   function planDateLabel(){
     var d=new Date();
@@ -2783,70 +2800,53 @@
   }
   function renderTodayPlan(){
     var list=document.getElementById("planList"); if(!list)return;
-    if(!S.plans)S.plans={};
+    if(!S.dailyTasks)S.dailyTasks=[];
+    if(!S.dailyDone)S.dailyDone={};
     var tkey=planKey();
-    if(!S.plans[tkey])S.plans[tkey]=[];
-    var items=S.plans[tkey];
+    var items=S.dailyTasks;
     var lab=document.getElementById("planDateLabel");
     if(lab)lab.textContent=planDateLabel();
-    var doneN=0; items.forEach(function(p){ if(p.done)doneN++; });
+    var doneMap=S.dailyDone[tkey]||{};
+    var doneN=0; items.forEach(function(p){ if(doneMap[p.id])doneN++; });
     var pg=document.getElementById("planProgress");
     if(pg)pg.textContent=items.length?("已完成 "+doneN+"/"+items.length):"";
     var html="";
     items.forEach(function(p){
-      html+='<div class="plan-item'+(p.done?" done":"")+'">'+
-        '<input type="checkbox" class="plan-check" '+(p.done?"checked":"")+' onclick="window.RP.togglePlan(\''+p.id+'\')">'+
+      var d=!!doneMap[p.id];
+      html+='<div class="plan-item'+(d?" done":"")+'">'+
+        '<input type="checkbox" class="plan-check" '+(d?"checked":"")+' onclick="window.RP.togglePlan(\''+p.id+'\')">'+
         '<span class="plan-text" onclick="window.RP.togglePlan(\''+p.id+'\')">'+esc(p.text)+'</span>'+
         '<button type="button" class="plan-del" title="删除" onclick="window.RP.delPlan(\''+p.id+'\')">×</button>'+
       '</div>';
     });
-    if(!items.length) html='<div class="plan-empty">今天还没有计划，在下方添加一条吧（建议只写当天最要紧的几件事）。</div>';
+    if(!items.length) html='<div class="plan-empty">还没有固定任务，在下方添加一条吧（每天都会显示，可随时增删）。</div>';
     list.innerHTML=html;
-    // 昨日未完成提示（可一键带入今天）
-    var carry=document.getElementById("planCarry");
-    if(carry){
-      var y=new Date(); y.setDate(y.getDate()-1);
-      var yArr=(S.plans||{})[planKey(y)]||[];
-      var yUn=0; yArr.forEach(function(x){ if(!x.done)yUn++; });
-      if(yUn>0){
-        carry.style.display="flex";
-        carry.innerHTML='<span>昨天还有 '+yUn+' 条未完成</span><button type="button" class="btn ghost" style="padding:3px 10px;font-size:12px;min-height:26px;" onclick="window.RP.carryPlans()">带入今天</button>';
-      } else carry.style.display="none";
-    }
   }
   function addPlan(){
     var inp=document.getElementById("planInput"); if(!inp)return;
     var t=(inp.value||"").trim();
     if(!t){ inp.focus(); return; }
-    if(!S.plans)S.plans={};
-    var tkey=planKey();
-    if(!S.plans[tkey])S.plans[tkey]=[];
-    S.plans[tkey].push({id:"p"+Date.now()+Math.floor(Math.random()*9000+1000),text:t,done:false});
+    if(!S.dailyTasks)S.dailyTasks=[];
+    S.dailyTasks.push({id:"p"+Date.now()+Math.floor(Math.random()*9000+1000),text:t});
     inp.value="";
     save();
     renderTodayPlan();
   }
   function togglePlan(id){
-    var arr=(S.plans||{})[planKey()]||[];
-    var x=null; arr.forEach(function(p){ if(p.id===id)x=p; });
-    if(x){ x.done=!x.done; save(); renderTodayPlan(); }
-  }
-  function delPlan(id){
-    var arr=(S.plans||{})[planKey()]||[];
-    var i=-1; arr.forEach(function(p,ix){ if(p.id===id)i=ix; });
-    if(i>=0){ arr.splice(i,1); save(); renderTodayPlan(); }
-  }
-  function carryPlans(){
-    var y=new Date(); y.setDate(y.getDate()-1);
-    var yArr=(S.plans||{})[planKey(y)]||[];
     var tkey=planKey();
-    if(!S.plans)S.plans={};
-    if(!S.plans[tkey])S.plans[tkey]=[];
-    yArr.forEach(function(x){
-      if(!x.done) S.plans[tkey].push({id:"p"+Date.now()+Math.floor(Math.random()*9000+1000),text:x.text,done:false});
-    });
+    if(!S.dailyDone[tkey])S.dailyDone[tkey]={};
+    if(S.dailyDone[tkey][id]) delete S.dailyDone[tkey][id];
+    else S.dailyDone[tkey][id]=true;
     save();
     renderTodayPlan();
+  }
+  function delPlan(id){
+    var i=-1; S.dailyTasks.forEach(function(p,ix){ if(p.id===id)i=ix; });
+    if(i>=0){
+      S.dailyTasks.splice(i,1);
+      for(var dk in S.dailyDone){ if(S.dailyDone[dk][id]) delete S.dailyDone[dk][id]; }
+      save(); renderTodayPlan();
+    }
   }
   function openTimer(){
     var ov=document.getElementById("timerOverlay");
@@ -3076,7 +3076,7 @@
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
     startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan,    openTimeCollection:openTimeCollection,closeTimeCollection:closeTimeCollection,renderTimeCollection:renderTimeCollection,
     openBackfill:openBackfill,closeBackfill:closeBackfill,submitBackfill:submitBackfill,deleteSession:deleteSession,recomputeStudyTotals:recomputeStudyTotals,
-    addPlan:addPlan,togglePlan:togglePlan,delPlan:delPlan,carryPlans:carryPlans,renderTodayPlan:renderTodayPlan
+    addPlan:addPlan,togglePlan:togglePlan,delPlan:delPlan,renderTodayPlan:renderTodayPlan
   };
 
   // 启动
