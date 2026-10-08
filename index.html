@@ -180,10 +180,10 @@
   .focus-switch.on{background:#d99b1c;}
   .focus-switch.on::after{left:23px;}
   /* 沉浸式全屏时钟 */
-  #focusOverlay{position:fixed;inset:0;background:#000;z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:none;user-select:none;}
-  #focusOverlay .fo-time{font-size:min(20vw,180px);color:#fff;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;}
-  #focusOverlay .fo-label{margin-top:20px;color:rgba(255,255,255,.45);font-size:15px;}
-  #focusOverlay .fo-hint{position:absolute;bottom:26px;color:rgba(255,255,255,.22);font-size:12px;}
+  #focusOverlay{position:fixed;inset:0;background:#fff;z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:none;user-select:none;}
+  #focusOverlay .fo-time{font-size:min(20vw,180px);color:#111;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;}
+  #focusOverlay .fo-label{margin-top:20px;color:rgba(0,0,0,.45);font-size:15px;}
+  #focusOverlay .fo-hint{position:absolute;bottom:26px;color:rgba(0,0,0,.22);font-size:12px;}
   /* 每日计划 */
   .plan-list{margin-top:6px;}
   .plan-item{display:flex;align-items:flex-start;gap:10px;padding:8px 2px;border-bottom:1px dashed var(--cy-soft);}
