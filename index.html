@@ -173,6 +173,17 @@
   .tc-del{flex:none;width:26px;height:26px;border:none;background:transparent;border-radius:50%;color:#c9b78a;font-size:18px;line-height:1;cursor:pointer;transition:background .15s,color .15s;display:flex;align-items:center;justify-content:center;}
   .tc-del:hover{background:#fbe2e2;color:#c0392b;}
   .tc-empty{padding:30px;text-align:center;color:var(--cy-sub);font-size:14px;}
+  /* 专注模式开关（极简） */
+  .focus-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;font-size:13px;color:var(--cy-sub);}
+  .focus-switch{position:relative;width:44px;height:24px;border-radius:12px;background:#e5d9b8;border:none;padding:0;cursor:pointer;transition:background .2s;flex:0 0 44px;min-height:24px;}
+  .focus-switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s;}
+  .focus-switch.on{background:#d99b1c;}
+  .focus-switch.on::after{left:23px;}
+  /* 沉浸式全屏时钟 */
+  #focusOverlay{position:fixed;inset:0;background:#000;z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:none;user-select:none;}
+  #focusOverlay .fo-time{font-size:min(20vw,180px);color:#fff;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;}
+  #focusOverlay .fo-label{margin-top:20px;color:rgba(255,255,255,.45);font-size:15px;}
+  #focusOverlay .fo-hint{position:absolute;bottom:26px;color:rgba(255,255,255,.22);font-size:12px;}
   /* 每日计划 */
   .plan-list{margin-top:6px;}
   .plan-item{display:flex;align-items:flex-start;gap:10px;padding:8px 2px;border-bottom:1px dashed var(--cy-soft);}
@@ -815,6 +826,10 @@
           <button class="btn ghost" id="twBackfill" onclick="window.RP.openBackfill()">＋ 补记往日时长</button>
           <button class="btn ghost" onclick="window.RP.openTimeCollection()">☰ 全部计时明细</button>
         </div>
+        <div class="focus-row">
+          <span>专注模式 · 30秒无操作自动全屏时钟</span>
+          <button type="button" class="focus-switch" id="focusSwitch" aria-label="专注模式开关" onclick="window.RP.toggleFocusMode()"></button>
+        </div>
       </div>
     </div>
   </div>
@@ -823,6 +838,13 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="r0UWnU1eA0IpDTwfvev505"><circle cx="12" cy="13" r="8" data-page-node-id="9mWBRL4OrYfP4DBqQRzqMF"/><path d="M12 9v4l2 2" data-page-node-id="52YCUBVDzFRCL4oF0TLvlH"/><path d="M9 2h6" data-page-node-id="AhcDwEMIKGzGjnW2EdzuYQ"/></svg>
   </button>
   <div class="timer-badge" id="timerBadge" data-page-node-id="rNEuYJiJYsNuZcZePtko03">00:00</div>
+
+  <!-- 沉浸式全屏专注时钟 -->
+  <div id="focusOverlay">
+    <div class="fo-time" id="foTime">00:00</div>
+    <div class="fo-label" id="foLabel"></div>
+    <div class="fo-hint">移动鼠标或按任意键退出专注模式</div>
+  </div>
 
   <!-- 计时明细集合弹层 -->
   <div class="modal-mask" id="timeCollectionMask" onclick="if(event.target===this)window.RP.closeTimeCollection()" data-page-node-id="AZpxAC2T8bSY1Ci8S49faT">
@@ -2674,6 +2696,56 @@
     if(fab)fab.classList.toggle("running",t.running);
   }
   function twRender(){ twRenderFor(activeTimer()); }
+  // ===== 专注模式（30秒无操作 → 沉浸式全屏时钟）=====
+  var FKEY="wb_rongpiao_focusmode";
+  var focusEnabled=false, focusActive=false, focusIdleTid=null, focusTid=null;
+  function loadFocusPref(){ try{ focusEnabled=localStorage.getItem(FKEY)==="1"; }catch(e){} applyFocusSwitch(); }
+  function applyFocusSwitch(){ var sw=document.getElementById("focusSwitch"); if(sw)sw.classList.toggle("on",focusEnabled); }
+  function toggleFocusMode(){
+    focusEnabled=!focusEnabled;
+    try{ localStorage.setItem(FKEY,focusEnabled?"1":"0"); }catch(e){}
+    applyFocusSwitch();
+    if(focusEnabled){ resetFocusIdle(); } else { exitFocus(); }
+  }
+  function resetFocusIdle(){
+    if(focusIdleTid){ clearTimeout(focusIdleTid); focusIdleTid=null; }
+    if(!focusEnabled||focusActive)return;
+    focusIdleTid=setTimeout(function(){
+      focusIdleTid=null;
+      if(focusEnabled&&!focusActive&&anyTimerRunning())enterFocus();
+    },30000);
+  }
+  function enterFocus(){
+    if(focusActive)return;
+    focusActive=true;
+    var ov=document.getElementById("focusOverlay");
+    if(ov)ov.style.display="flex";
+    var t=activeTimer();
+    var lab=document.getElementById("foLabel");
+    if(lab)lab.textContent=(activeTimerMode==="thesis"?"论文":"备课")+" · "+(t.mode==="down"?"40分钟倒计时":"正计时");
+    updateFocusTime();
+    focusTid=setInterval(updateFocusTime,250);
+  }
+  function updateFocusTime(){
+    if(!anyTimerRunning()){ exitFocus(); return; }
+    var t=activeTimer();
+    var el=t.base+(t.running?(Date.now()-t.startTs):0)/1000;
+    var disp=(t.mode==="up")?fmtClock(el):fmtClock(Math.max(0,DOWN_TOTAL-el));
+    var e1=document.getElementById("foTime"); if(e1)e1.textContent=disp;
+  }
+  function exitFocus(){
+    if(focusTid){ clearInterval(focusTid); focusTid=null; }
+    if(!focusActive)return;
+    focusActive=false;
+    var ov=document.getElementById("focusOverlay"); if(ov)ov.style.display="none";
+    resetFocusIdle();
+  }
+  ["mousemove","mousedown","keydown","touchstart","wheel","scroll"].forEach(function(ev){
+    window.addEventListener(ev,function(){
+      if(focusActive){ exitFocus(); }
+      else if(focusEnabled){ resetFocusIdle(); }
+    },{passive:true});
+  });
   function startTimer(){
     var t=activeTimer();
     if(t.running)return;
@@ -3076,12 +3148,14 @@
     toggleWrong:toggleWrong,goStruct:goStruct,showDay:showDay,
     startVideoRec:startVideoRec,renderVideo:renderVideo,renameVid:renameVid,saveVidTranscript:saveVidTranscript,saveVidReview:saveVidReview,saveVidReviewFromPlayer:saveVidReviewFromPlayer,filterVideosByReview:filterVideosByReview,clearVidReviewFilter:clearVidReviewFilter,renderVidReviewSummary:renderVidReviewSummary,clearVidSearch:clearVidSearch,openVidPlayer:openVidPlayer,closeVidPlayer:closeVidPlayer,openJianan:openJianan,closeJianan:closeJianan,    openTimeCollection:openTimeCollection,closeTimeCollection:closeTimeCollection,renderTimeCollection:renderTimeCollection,
     openBackfill:openBackfill,closeBackfill:closeBackfill,submitBackfill:submitBackfill,deleteSession:deleteSession,recomputeStudyTotals:recomputeStudyTotals,
-    addPlan:addPlan,togglePlan:togglePlan,delPlan:delPlan,renderTodayPlan:renderTodayPlan
+    addPlan:addPlan,togglePlan:togglePlan,delPlan:delPlan,renderTodayPlan:renderTodayPlan,
+    toggleFocusMode:toggleFocusMode
   };
 
   // 启动
   load();
   loadTimer();
+  loadFocusPref();
   bind();
   showPage("home");
   twRender();
