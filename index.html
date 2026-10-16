@@ -2698,7 +2698,7 @@
   function twRender(){ twRenderFor(activeTimer()); }
   // ===== 专注模式（30秒无操作 → 沉浸式全屏时钟）=====
   var FKEY="wb_rongpiao_focusmode";
-  var focusEnabled=false, focusActive=false, focusIdleTid=null, focusTid=null;
+  var focusEnabled=false, focusActive=false, focusIdleTid=null, focusTid=null, wakeLock=null;
   function loadFocusPref(){ try{ focusEnabled=localStorage.getItem(FKEY)==="1"; }catch(e){} applyFocusSwitch(); }
   function applyFocusSwitch(){ var sw=document.getElementById("focusSwitch"); if(sw)sw.classList.toggle("on",focusEnabled); }
   function toggleFocusMode(){
@@ -2725,6 +2725,7 @@
     if(lab)lab.textContent=(activeTimerMode==="thesis"?"论文":"备课")+" · "+(t.mode==="down"?"40分钟倒计时":"正计时");
     updateFocusTime();
     focusTid=setInterval(updateFocusTime,250);
+    requestWakeLock();
   }
   function updateFocusTime(){
     if(!anyTimerRunning()){ exitFocus(); return; }
@@ -2739,7 +2740,26 @@
     focusActive=false;
     var ov=document.getElementById("focusOverlay"); if(ov)ov.style.display="none";
     resetFocusIdle();
+    releaseWakeLock();
   }
+  // 屏幕常亮（Wake Lock API）：仅安全上下文（https/localhost）可用，file:// 自动降级
+  function requestWakeLock(){
+    try{
+      if(!('wakeLock' in navigator))return;
+      if(wakeLock)return;
+      navigator.wakeLock.request('screen').then(function(wl){
+        wakeLock=wl;
+        wl.addEventListener('release',function(){ if(wakeLock===wl)wakeLock=null; });
+      }).catch(function(){});
+    }catch(e){}
+  }
+  function releaseWakeLock(){
+    try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){}
+  }
+  // 标签页切回前台时锁已失效，重新申请
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden && focusActive) requestWakeLock();
+  });
   ["mousemove","mousedown","keydown","touchstart","wheel","scroll"].forEach(function(ev){
     window.addEventListener(ev,function(){
       if(focusActive){ exitFocus(); }
